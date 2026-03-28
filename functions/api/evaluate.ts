@@ -32,6 +32,19 @@ export const onRequestPost = async (context: {
       subjectId: string;
       harshness: number;
     };
+
+    // --- DEFENSIVE BINDING CHECKS ---
+    if (!env.AI) {
+      return new Response(JSON.stringify({ 
+        error: "AI Binding Offline. Please check Cloudflare Pages Dash > Settings > Functions > AI Bindings." 
+      }), { status: 500, headers: { "Content-Type": "application/json" } });
+    }
+
+    if (!env.SUBJECT_ARCHIVE) {
+      return new Response(JSON.stringify({ 
+        error: "KV Binding (SUBJECT_ARCHIVE) Offline. Please check Cloudflare Pages Dash > Settings > Functions > KV namespace bindings." 
+      }), { status: 500, headers: { "Content-Type": "application/json" } });
+    }
     
     // 0. Geospatial Context
     const cf = (request as any).cf || {};
