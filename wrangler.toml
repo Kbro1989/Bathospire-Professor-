@@ -8,7 +8,7 @@ binding = "AI"
 
 [[kv_namespaces]]
 binding = "SUBJECT_ARCHIVE"
-id = "subject_archive_kv" # This ID will be used in production; local dev uses a local DB.
+id = "1dc814f4041d45219321791dd3adec7a" # Validated Hex ID for SUBJECT_ARCHIVE archive store.
 
 [vars]
 SYSTEM_PROMPT = "Professor Bathysphere's Cursive Academy"
