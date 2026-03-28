@@ -145,6 +145,25 @@ INSTRUCTION: Analyze image and return ONLY JSON. Start with {`;
       throw new Error(`Professor's Diagnosis Unreadable: ${JSON.stringify(aiResponse.response).substring(0, 100)}...`);
     }
 
+    // --- 6.5 CHROMA BACKDROP SYNTHESIS (Mastery Reward) ---
+    if (assessment.academic_assessment.score >= 8.0 && env.AI) {
+      try {
+        const backdropPrompt = `A cinematic, ultra-realistic bioluminescent deep-sea ocean floor scene. In the center, glowing neon coral reefs and ethereal marine life have grown into the perfect shape of the cursive letter "${targetWord}". Ethereal light beams filtering through dark water, 8k resolution, magical atmosphere.`;
+        
+        const photoResponse: any = await env.AI.run("@cf/black-forest-labs/flux-1-schnell", {
+          prompt: backdropPrompt,
+          num_steps: 4
+        });
+
+        if (photoResponse && photoResponse.image) {
+          assessment.gated_unlocks.visual_feedback = `data:image/png;base64,${photoResponse.image}`;
+        }
+      } catch (artError) {
+        console.error("Art Synthesis Failed:", artError);
+        // Fail silently; don't break the assessment for a missing backdrop
+      }
+    }
+
     // 7. Persistent Archive Write-Back
     await env.SUBJECT_ARCHIVE.put(`subject:${subjectId}:record`, JSON.stringify({
       lastPerformance: assessment,

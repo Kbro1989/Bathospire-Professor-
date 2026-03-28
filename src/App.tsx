@@ -72,6 +72,7 @@ export default function App() {
   const [curriculumIndex, setCurriculumIndex] = useState(0);
   const targetWord = CURRICULUM[curriculumIndex];
   const [streak, setStreak] = useState(0);
+  const [backdropUrl, setBackdropUrl] = useState<string | null>(null);
 
   // Subject Profile & History
   const [ageRange, setAgeRange] = useState("Adult (18+)");
@@ -339,6 +340,11 @@ export default function App() {
 
       setAssessment(parsed);
       setScoreHistory(prev => [parsed.academic_assessment.score, ...prev].slice(0, 10));
+
+      // --- CHROMA BACKDROP CAPTURE ---
+      if (parsed.gated_unlocks?.visual_feedback?.startsWith("data:image")) {
+        setBackdropUrl(parsed.gated_unlocks.visual_feedback);
+      }
     } catch (error: any) {
       console.error("Error evaluating:", error);
       alert(error.message || "Lab results compromised. Check telemetry.");
@@ -360,6 +366,21 @@ export default function App() {
 
   return (
     <div className="h-screen w-screen bg-[#02050a] text-slate-300 font-sans selection:bg-cyan-500/30 overflow-hidden relative flex flex-col">
+      {/* --- CHROMA BACKDROP LAYER --- */}
+      {backdropUrl && (
+        <div 
+          className="absolute inset-0 z-0 transition-opacity duration-1000 animate-fade-in pointer-events-none"
+          style={{
+            backgroundImage: `url(${backdropUrl})`,
+            backgroundSize: 'cover',
+            backgroundPosition: 'center',
+            opacity: isEvaluating ? 0.1 : 0.25,
+            filter: 'blur(20px) contrast(1.2) saturate(1.5)',
+            mixBlendMode: 'screen'
+          }}
+        />
+      )}
+
       {/* Background Depth Engine */}
       <motion.div 
         className="fixed inset-0 pointer-events-none"
