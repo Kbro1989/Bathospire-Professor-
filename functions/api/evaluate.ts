@@ -8,42 +8,23 @@ export async function onRequestPost(context: any) {
   const { request, env } = context;
   
   try {
+    // --- DATA EXTRACTION & FORENSICS ---
+    const body = await request.json() as any;
     const { 
-      image, 
-      curriculumStage, 
-      targetWord, 
-      streak, 
-      ageRange, 
-      educationalLevel, 
-      scoreHistory,
-      subjectId,
-      harshness
-    } = await request.json() as {
-      image: string;
-      curriculumStage: string;
-      targetWord: string;
-      streak: number;
-      ageRange: string;
-      educationalLevel: string;
-      scoreHistory: number[];
-      subjectId: string;
-      harshness: number;
-    };
-
+      image, curriculumStage, targetWord, streak, 
+      ageRange, educationalLevel, scoreHistory, 
+      subjectId, harshness, kinematics = [] 
+    } = body;
+    
     // --- DEFENSIVE BINDING CHECKS ---
     if (!env.AI) {
-      return new Response(JSON.stringify({ 
-        error: "AI Binding Offline. Please check Cloudflare Pages Dash > Settings > Functions > AI Bindings." 
-      }), { status: 500, headers: { "Content-Type": "application/json" } });
+      return new Response(JSON.stringify({ error: "AI Binding Offline." }), { status: 500 });
+    }
+    if (!env.SUBJECT_ARCHIVE) {
+      return new Response(JSON.stringify({ error: "KV Binding Offline." }), { status: 500 });
     }
 
-    if (!env.SUBJECT_ARCHIVE) {
-      return new Response(JSON.stringify({ 
-        error: "KV Binding (SUBJECT_ARCHIVE) Offline. Please check Cloudflare Pages Dash > Settings > Functions > KV namespace bindings." 
-      }), { status: 500, headers: { "Content-Type": "application/json" } });
-    }
-    
-    // 0. Geospatial Context
+    // --- GEOSPATIAL CONTEXT ---
     const cf = (request as any).cf || {};
     const location = {
       city: cf.city || "Unknown Depth",
@@ -52,11 +33,45 @@ export async function onRequestPost(context: any) {
       lon: cf.longitude
     };
 
-    // const binaryImage = Uint8Array.from(atob(image), c => c.charCodeAt(0)); // No longer needed for multimodal schema
+    // --- JAVASCRIPT FORENSIC HELPERS: Tactile Data Extraction ---
+    const calculateForensics = (strokes: any[][]) => {
+      let uMin = 1, uMax = 0, vMin = 1, vMax = 0;
+      let totalPoints = 0, totalPressure = 0;
+      
+      strokes.forEach(stroke => {
+        stroke.forEach(pt => {
+          uMin = Math.min(uMin, pt.u);
+          uMax = Math.max(uMax, pt.u);
+          vMin = Math.min(vMin, pt.v);
+          vMax = Math.max(vMax, pt.v);
+          totalPressure += (pt.p || 0.5);
+          totalPoints++;
+        });
+      });
+
+      return {
+        bounds: { 
+          u: [uMin.toFixed(3), uMax.toFixed(3)], 
+          v: [vMin.toFixed(3), vMax.toFixed(3)] 
+        },
+        metrics: {
+          strokeCount: strokes.length,
+          avgPressure: totalPoints > 0 ? (totalPressure / totalPoints).toFixed(2) : "0.50",
+          pointDensity: totalPoints
+        }
+      };
+    };
+
+    const forensics = calculateForensics(kinematics);
 
     const SYSTEM_PROMPT = `You are PROFESSOR BATHYSPHERE, a tenured calligrapher-marine biologist hybrid.
 Pedagogical approach: Mastery learning (8/10 threshold).
 Persona: Critical, clinical, but adapts fluidly based on the subject's profile, location, and Clinical Harshness calibration.
+
+FORENSIC LAB DATA (Tactile Specs):
+- STROKES DETECTED: ${forensics.metrics.strokeCount}
+- AVG PRESSURE: ${forensics.metrics.avgPressure}/1.0
+- SPATIAL BOUNDS (0-1 Scale): U[${forensics.bounds.u}], V[${forensics.bounds.v}]
 
 SUBJECT PROFILE:
 - ID: ${subjectId}
@@ -66,15 +81,8 @@ SUBJECT PROFILE:
 - CLINICAL HARSHNESS: ${harshness}/100
 - CURRENT STATION: ${location.city}, ${location.country} (Ocean Sub-sector)
 
-TONE CALIBRATION:
-- 0-30 (EXPLORER): Encouraging, supportive, uses sea analogies.
-- 31-70 (ACADEMIC): Clinical and professional.
-- 71-100 (PATHOLOGIST): Extremely arrogant, technical, and rididuling. Describe errors as "pathological specimens" or "evolutionary dead ends."
-
 STRICT OUTPUT PROTOCOL: 
-Output ONLY valid JSON. 
-Zero preamble. Zero markdown formatting. Zero conversational fillers.
-If you fail to provide valid JSON, the habitat pressure will crush the laboratory.`;
+Output ONLY valid JSON. Zero preamble. Start with {`;
 
     const prompt = `Evaluate cursive handwriting specimen:
 ###
