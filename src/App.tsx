@@ -580,6 +580,22 @@ export default function App() {
             </div>
           ) : assessment ? (
             <div className="flex flex-col gap-6 overflow-y-auto custom-scrollbar pr-2">
+              {/* --- SPATIAL PRECISION HUD --- */}
+              <div className="grid grid-cols-2 gap-3 mb-2">
+                <div className="p-3 rounded-xl bg-white/5 border border-white/10 text-center">
+                  <span className="text-[9px] font-mono uppercase opacity-50 block mb-1">Geometric Alignment</span>
+                  <div className="text-xl font-bold font-mono text-cyan-400">
+                    {assessment.diagnostic_analysis?.information_disclosure_level >= 4 ? `${(100 - (assessment.diagnostic_analysis.spatial_drift || 0) * 100).toFixed(1)}%` : "---%"}
+                  </div>
+                </div>
+                <div className="p-3 rounded-xl bg-white/5 border border-white/10 text-center">
+                  <span className="text-[9px] font-mono uppercase opacity-50 block mb-1">Drift Magnitude</span>
+                  <div className="text-xl font-bold font-mono text-orange-400">
+                    {assessment.diagnostic_analysis?.spatial_drift?.toFixed(3) || "0.000"}
+                  </div>
+                </div>
+              </div>
+
               <div className={`p-5 rounded-2xl border ${getTierColor(assessment.academic_assessment.score)} flex items-center justify-between`}>
                 <div>
                   <span className="text-[10px] font-mono uppercase opacity-70 block mb-1">Assessment</span>
@@ -606,7 +622,13 @@ export default function App() {
               <div className="space-y-4">
                 <div className="bg-black/40 p-4 rounded-xl border border-slate-800">
                   <span className="text-[9px] text-slate-500 font-mono uppercase block mb-1 tracking-widest">Prescription</span>
-                  <p className="text-sm leading-relaxed text-slate-300">{assessment.diagnostic_analysis.remediation_prescription}</p>
+                  <p className="text-sm font-medium leading-relaxed italic opacity-90">"{assessment.voice_response.emotional_transcription}"</p>
+                  {assessment.diagnostic_analysis.primary_failure_mode !== "None" && (
+                    <div className="mt-3 p-3 rounded-xl bg-red-500/10 border border-red-500/20 text-[11px] text-red-300">
+                      <span className="font-bold uppercase block mb-1">Diagnostic Alert: {assessment.diagnostic_analysis.primary_failure_mode}</span>
+                      {assessment.diagnostic_analysis.remediation_prescription}
+                    </div>
+                  )}
                 </div>
                 <div className="bg-black/40 p-4 rounded-xl border border-slate-800">
                   <span className="text-[9px] text-slate-500 font-mono uppercase block mb-1 tracking-widest">Diagnostic Failure</span>

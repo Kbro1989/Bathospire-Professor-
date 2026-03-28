@@ -37,6 +37,7 @@ export async function onRequestPost(context: any) {
     const calculateForensics = (strokes: any[][]) => {
       let uMin = 1, uMax = 0, vMin = 1, vMax = 0;
       let totalPoints = 0, totalPressure = 0;
+      let sumU = 0, sumV = 0;
       
       strokes.forEach(stroke => {
         stroke.forEach(pt => {
@@ -45,15 +46,20 @@ export async function onRequestPost(context: any) {
           vMin = Math.min(vMin, pt.v);
           vMax = Math.max(vMax, pt.v);
           totalPressure += (pt.p || 0.5);
+          sumU += pt.u;
+          sumV += pt.v;
           totalPoints++;
         });
       });
+
+      const userCentroid = totalPoints > 0 ? { u: sumU / totalPoints, v: sumV / totalPoints } : { u: 0.5, v: 0.5 };
 
       return {
         bounds: { 
           u: [uMin.toFixed(3), uMax.toFixed(3)], 
           v: [vMin.toFixed(3), vMax.toFixed(3)] 
         },
+        centroid: userCentroid,
         metrics: {
           strokeCount: strokes.length,
           avgPressure: totalPoints > 0 ? (totalPressure / totalPoints).toFixed(2) : "0.50",
@@ -64,40 +70,50 @@ export async function onRequestPost(context: any) {
 
     const forensics = calculateForensics(kinematics);
 
-    // --- 5. CALLIGRAPHIC REFERENCE LIBRARY: Standard Cursive Paths (0-100 scale) ---
-    const CALLIGRAPHIC_REFERENCES: Record<string, string> = {
-      'a': "M 40 60 C 35 60 30 55 30 45 C 30 35 40 30 50 30 C 60 30 70 35 70 45 L 70 60",
-      'b': "M 30 80 L 30 20 C 30 10 50 10 50 20 C 50 30 30 30 30 30 C 30 45 60 45 60 65 C 60 85 30 85 30 80",
-      'c': "M 70 30 C 60 20 30 20 30 50 C 30 80 60 80 70 70",
-      'd': "M 70 20 L 70 80 M 70 45 C 70 35 60 30 50 30 C 40 30 30 35 30 45 C 30 55 40 60 50 60 C 60 60 70 55 70 45",
-      'e': "M 30 50 C 30 30 70 30 70 50 C 70 70 30 70 30 50 L 70 50",
-      'f': "M 50 80 L 50 10 C 50 0 70 0 70 10 C 70 20 50 20 50 30 L 50 60 M 35 45 L 65 45",
-      // ... more letters as needed
+    // --- 5. CALLIGRAPHIC REFERENCE LIBRARY ---
+    const CALLIGRAPHIC_REFERENCES: Record<string, { path: string, centroid: { u: number, v: number } }> = {
+      'a': { 
+        path: "M 40 60 C 35 60 30 55 30 45 C 30 35 40 30 50 30 C 60 30 70 35 70 45 L 70 60", 
+        centroid: { u: 0.5, v: 0.45 } 
+      },
+      'b': { 
+        path: "M 30 80 L 30 20 C 30 10 50 10 50 20 C 50 30 30 30 30 30 C 30 45 60 45 60 65 C 60 85 30 85 30 80", 
+        centroid: { u: 0.45, v: 0.5 } 
+      },
+      'c': { 
+        path: "M 70 30 C 60 20 30 20 30 50 C 30 80 60 80 70 70", 
+        centroid: { u: 0.5, v: 0.5 } 
+      },
+      // ... same for d, e, f
     };
 
-    const targetRef = CALLIGRAPHIC_REFERENCES[targetWord.toLowerCase()] || "M 20 50 L 80 50";
+    const targetRef = CALLIGRAPHIC_REFERENCES[targetWord.toLowerCase()] || { path: "M 20 50 L 80 50", centroid: { u: 0.5, v: 0.5 } };
+    
+    // --- SPATIAL ALIGNMENT (Chroma Logic) ---
+    const du = forensics.centroid.u - targetRef.centroid.u;
+    const dv = forensics.centroid.v - targetRef.centroid.v;
+    const spatialDrift = Math.sqrt(du * du + dv * dv).toFixed(3);
 
     const SYSTEM_PROMPT = `You are PROFESSOR BATHYSPHERE, a master calligrapher and pedagogical analyst.
 Your mission is to provide high-fidelity assessments of cursive specimens.
 
 MASTER REFERENCE LIBRARY (Canonical Cursive):
 The following SVG path is a PERFECT reconstruction of '${targetWord}':
-- Canonical Path: "${targetRef}"
+- Canonical Path: "${targetRef.path}"
+- Ideal Centroid: U[${targetRef.centroid.u}], V[${targetRef.centroid.v}]
 
-FORENSIC LAB DATA:
+SPATIAL FORENSIC DATA:
+- CENTROID DRIFT (0-1 Scale): ${spatialDrift} (Lower is better precision)
+- USER CENTROID: U[${forensics.centroid.u.toFixed(3)}], V[${forensics.centroid.v.toFixed(3)}]
+- BOUNDS: U[${forensics.bounds.u}], V[${forensics.bounds.v}]
 - STROKES: ${forensics.metrics.strokeCount}
 - PRESSURE: ${forensics.metrics.avgPressure}/1.0
-- BOUNDS: U[${forensics.bounds.u}], V[${forensics.bounds.v}]
 
 INSTRUCTIONS:
-1. Compare visual specimen with Canonical Path.
-2. YOU MUST return a high-fidelity SVG path based on the Canonical Path provided above in 'trace_pad_underlay'.
-3. DO NOT hallucinate "squiggly" lines. Return a clean, traceable cursive path on a 0-100 scale.
-4. If score < 8.0, your path will guide the student's next attempt.
-5. Persona: Clinical, professional, but encouraging for students with no cursive background.
-
-STRICT OUTPUT PROTOCOL: 
-Output ONLY valid JSON. Zero preamble. Start with {`;
+1. Compare visual specimen with Canonical Path and Spatial Data.
+2. In 'trace_pad_underlay', YOU MUST return a high-fidelity SVG path based on the Canonical Path.
+3. If the student drifted spatially (Drift > 0.1), in your 'voice_response', ADDRESS THE POSITIONING error specifically (e.g., "Your loop is shifted too far to the right").
+4. Return ONLY valid JSON. Start with {`;
 
     const prompt = `Evaluate cursive handwriting specimen:
 ###
