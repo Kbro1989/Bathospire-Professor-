@@ -20,7 +20,7 @@ export async function onRequestGet(context: any) {
   return new Response(record || JSON.stringify({ message: "New Subject" }), {
     headers: { "Content-Type": "application/json" }
   });
-};
+}
 
 export async function onRequestPost(context: any) {
   const { request, env } = context;
@@ -41,4 +41,4 @@ export async function onRequestPost(context: any) {
   return new Response(JSON.stringify({ success: true }), {
     headers: { "Content-Type": "application/json" }
   });
-};
+}
