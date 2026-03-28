@@ -103,7 +103,8 @@ Return ONLY this JSON structure:
             { type: "image_url", image_url: { url: `data:image/jpeg;base64,${image}` } }
           ]
         }
-      ]
+      ],
+      max_tokens: 2048
     });
 
     let assessment: any;
