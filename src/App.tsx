@@ -545,7 +545,18 @@ export default function App() {
 
           {/* Canvas Wrapper */}
           <div className="absolute inset-0 z-10 overflow-hidden">
-            <div className="absolute inset-0 pointer-events-none opacity-20 bg-[linear-gradient(rgba(6,182,212,0.2)_1px,transparent_1px),linear-gradient(90deg,rgba(6,182,212,0.2)_1px,transparent_1px)] bg-[size:30px_30px]" />
+            {/* KINDERGARTEN WRITING PAPER LINES */}
+            <div className="absolute inset-0 pointer-events-none opacity-40">
+              {/* Top Line (Blue) */}
+              <div className="absolute top-[25%] left-0 w-full h-[1px] bg-cyan-500/30" />
+              {/* Middle/Mean Line (Dotted Blue) */}
+              <div className="absolute top-[50%] left-0 w-full border-t border-dashed border-cyan-500/20" />
+              {/* Baseline (Solid Red/Orange) */}
+              <div className="absolute top-[75%] left-0 w-full h-[1px] bg-orange-500/40 shadow-[0_1px_5px_rgba(249,115,22,0.2)]" />
+              
+              {/* Vertical Margin Grid (Subtle) */}
+              <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(6,182,212,0.1)_1px,transparent_1px)] bg-[size:50px_100%]" />
+            </div>
             
             {/* Animated Ghost Path Corrective (Wraps raw path string in SVG) */}
             {assessment?.gated_unlocks?.trace_pad_underlay && (

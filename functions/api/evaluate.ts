@@ -70,15 +70,49 @@ export async function onRequestPost(context: any) {
       },
     };
     const targetRef = REFERENCES[pureTarget] || { path: "M 20 50 L 80 50", centroid: { u: 0.5, v: 0.5 } };
-    const drift = Math.sqrt(Math.pow(forensics.centroid.u - targetRef.centroid.u, 2) + Math.pow(forensics.centroid.v - targetRef.centroid.v, 2)).toFixed(3);
+    
+    // --- SPATIAL ALIGNMENT (Chroma Logic Refined) ---
+    const du = forensics.centroid.u - targetRef.centroid.u;
+    const dv = forensics.centroid.v - targetRef.centroid.v;
+    const centroidDrift = Math.sqrt(du * du + dv * dv);
+
+    // SCALE DIVERGENCE: Calculate if the student's drawing is too small (Miniature)
+    const userArea = (parseFloat(forensics.bounds.u[1]) - parseFloat(forensics.bounds.u[0])) * 
+                     (parseFloat(forensics.bounds.v[1]) - parseFloat(forensics.bounds.v[0]));
+    const targetArea = 0.25; // Approximate ideal area (0.5u * 0.5v box)
+    const scaleRatio = Math.min(1, userArea / targetArea);
+    
+    // FINAL SPATIAL SCORE (Combines Centroid Logic + Scale Logic)
+    // If drawing is tiny, Alignment drops even if centered.
+    const alignmentScore = Math.max(0, (1 - (centroidDrift * 1.5)) * scaleRatio);
+
+    const BRAIN_SYSTEM_PROMPT = `You are PROFESSOR BATHYSPHERE, a master calligrapher and pedagogical analyst.
+Your mission is to provide high-fidelity assessments of cursive specimens.
+
+SPATIAL VISION DATA:
+- GEOMETRIC ALIGNMENT (0-1): ${alignmentScore.toFixed(3)}
+- SCALE RATIO (Target 1.0): ${scaleRatio.toFixed(3)} ( < 0.3 means drawing is too small )
+- CENTROID DRIFT: ${centroidDrift.toFixed(3)}
+- BOUNDS: U[${forensics.bounds.u}], V[${forensics.bounds.v}]
+- STROKES: ${forensics.metrics.strokes}
+
+GUIDELINES FOR THE PROFESSOR:
+1. Look for the "Kindergarten Writing Guidelines":
+   - TOP LINE (The Sky): V=0.25
+   - MEAN LINE (The Cloud): V=0.50
+   - BASELINE (The Earth): V=0.75
+2. IF SCALE RATIO < 0.4: SCORING CEILING IS 5.0. Scold the student for drawing a "miniature" instead of filling the canvas.
+3. IF ALIGNMENT IS GOOD ( > 0.8 ): Be clinical but impressed.
+4. RETURN ONLY VALID JSON.`;
 
     // --- PHASE 1: THE EYE (Vision Specialist) ---
     const visionResponse: any = await env.AI.run("@cf/meta/llama-3.2-11b-vision-instruct", {
       image: [image],
       prompt: `Strictly critique this specimen for "${targetWord}". 
                1. If the shape is NOT the letter "${pureTarget}" (e.g. just a line, a hyphen, or empty), assign a score of 1.0.
-               2. Analyze cursive formation: loops, stems, and terminal strokes.
-               3. Compare to "${targetWord}" specifically.
+               2. Analyze cursive formation compared to the Kindergarten guidelines:
+                  Sky at V=25%, Middle at V=50%, Baseline at V=75%.
+               3. If drawing is "miniature" or "floating", mention it.
                Return a clinical, brief description of the formation quality.`,
       max_tokens: 512
     });
@@ -89,26 +123,22 @@ export async function onRequestPost(context: any) {
 Synthesize a forensic report into a strictly valid JSON object.
 
 ANALYSIS GUIDELINES:
-- IF Specimen is NOT a character (e.g. just a hyphen '-'), SCORE IS 1.0.
+- IF Specimen is NOT a character (e.g. just a hyphen), SCORE IS 1.0.
+- IF SCALE RATIO < 0.4 (Miniature), MAX SCORE IS 5.0.
 - PASSING GRADE (next_challenge_eligibility = true) is Score >= 7.0.
 - MASTERY STATUS (mastery_status = 'Mastered') is Score >= 8.5.
 
 VISUAL CRITIQUE: "${visualCritique}"
-FORENSIC DATA: Strokes: ${forensics.metrics.strokes}, Pressure: ${forensics.metrics.avgP}, Spatial Drift: ${drift}
-TARGET SUBJECT: "${targetWord}" (Pure: ${pureTarget})
-CANONICAL PATH: "${targetRef.path}"
-
-VISUAL CRITIQUE: "${visualCritique}"
-FORENSIC DATA: Strokes: ${forensics.metrics.strokes}, Pressure: ${forensics.metrics.avgP}, Spatial Drift: ${drift}
-TARGET WORD: "${targetWord}"
+FORENSIC DATA: Strokes: ${forensics.metrics.strokes}, Scale Ratio: ${scaleRatio}, Centroid Drift: ${centroidDrift}
+TARGET SUBJECT: "${targetWord}"
 CANONICAL PATH: "${targetRef.path}"
 
 LAB PROTOCOL: 
 Output ONLY valid JSON.
 {
   "academic_assessment": { "score": 1-10, "tier_classification": "string", "mastery_status": "Mastered/Fail", "next_challenge_eligibility": true/false, "difficulty_adjustment": "Maintain/Ease/Advance" },
-  "diagnostic_analysis": { "primary_failure_mode": "string", "spatial_drift": ${drift}, "remediation_prescription": "string", "information_disclosure_level": 5 },
-  "voice_response": { "professor_persona": "Clinical", "emotional_valence": "string", "roast_intensity": 1-10, "hype_coefficient": 1-10, "emotional_transcription": "A professor-esque summary of the critique and forensics." },
+  "diagnostic_analysis": { "primary_failure_mode": "string", "spatial_drift": ${centroidDrift}, "remediation_prescription": "string", "information_disclosure_level": 5 },
+  "voice_response": { "professor_persona": "Clinical", "emotional_valence": "string", "roast_intensity": 1-10, "hype_coefficient": 1-10, "emotional_transcription": "A professor-esque summary." },
   "gated_unlocks": { "technique_revealed": "string", "historical_exemplar": "string", "visual_feedback": "string", "next_challenge_preview": "string", "trace_pad_underlay": "${targetRef.path}" },
   "adaptive_parameters": { "recommended_next_target": "string", "next_curriculum_stage": "Letters/Words/Sentences" }
 }`;
