@@ -83,14 +83,16 @@ TARGET: ${targetWord}
 STREAK: ${streak}
 ###
 
-Return ONLY this JSON structure:
+EXAMPLE OUTPUT PROTOCOL:
 {
-  "academic_assessment": { "score": number, "tier_classification": string, "mastery_status": string, "next_challenge_eligibility": boolean, "difficulty_adjustment": string },
-  "diagnostic_analysis": { "primary_failure_mode": string, "kinematic_anomaly": string, "remediation_prescription": string, "information_disclosure_level": number },
-  "voice_response": { "professor_persona": string, "emotional_valence": string, "roast_intensity": number, "hype_coefficient": number, "emotional_transcription": string },
-  "gated_unlocks": { "technique_revealed": string, "historical_exemplar": string, "visual_feedback": string, "next_challenge_preview": string, "trace_pad_underlay": "SVG_PATH_STRING" },
-  "adaptive_parameters": { "recommended_next_target": string, "next_curriculum_stage": string, "scaffolding_level": string, "cognitive_load_adjustment": string, "retrieval_practice_prompt": string }
-}`;
+  "academic_assessment": { "score": 8.5, "tier_classification": "Advanced", "mastery_status": "Mastered", "next_challenge_eligibility": true, "difficulty_adjustment": "Maintain" },
+  "diagnostic_analysis": { "primary_failure_mode": "None", "kinematic_anomaly": "Slight jitter on ascender", "remediation_prescription": "Focus on fluid wrist rotation.", "information_disclosure_level": 5 },
+  "voice_response": { "professor_persona": "Clinical and impressed.", "emotional_valence": "Positive", "roast_intensity": 2, "hype_coefficient": 8, "emotional_transcription": "Exquisite line work, Subject." },
+  "gated_unlocks": { "technique_revealed": "Feather-light pressure", "historical_exemplar": "Palmer Method", "visual_feedback": "Perfect baseline alignment.", "next_challenge_preview": "Connected loops", "trace_pad_underlay": "M 10 80 C 40 10 65 10 95 80" },
+  "adaptive_parameters": { "recommended_next_target": "b", "next_curriculum_stage": "Connected Letters", "scaffolding_level": "Minimal", "cognitive_load_adjustment": "Optimal", "retrieval_practice_prompt": "Recall the loop entry." }
+}
+
+INSTRUCTION: Analyze the image and return ONLY the JSON. No markdown. No intro. Start with {`;
 
     // 1. Handwriting Evaluation with Vision Model (Image URL Data URI Schema)
     const aiResponse: any = await env.AI.run("@cf/meta/llama-3.2-11b-vision-instruct", {
