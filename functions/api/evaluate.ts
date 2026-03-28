@@ -145,20 +145,38 @@ INSTRUCTION: Analyze image and return ONLY JSON. Start with {`;
 
     let assessment: any;
     try {
-      let raw = aiResponse.response;
-      const cleanJson = (input: any): any => {
-        if (typeof input === 'object') return input;
+      const raw = aiResponse.response;
+      const cleanJson = (input: string): any => {
+        // 1. Base Case: already an object
+        if (typeof input !== 'string') return input;
+        
+        // 2. Identify and Extract JSON block (find first { and last })
+        const firstChar = input.indexOf('{');
+        const lastChar = input.lastIndexOf('}');
+        if (firstChar === -1 || lastChar === -1) throw new Error("No JSON block found.");
+        
+        let target = input.substring(firstChar, lastChar + 1);
+
+        // 3. Recursive attempt to decode (handles double-encoded strings)
         try {
-          const parsed = JSON.parse(input);
+          const parsed = JSON.parse(target);
           return typeof parsed === 'object' ? parsed : cleanJson(parsed);
-        } catch {
-          const match = input.match(/\{[\s\S]*\}/);
-          return match ? JSON.parse(match[0]) : JSON.parse(input);
+        } catch (e) {
+          // 4. Sanitize and try one last time (handles escaped quotes/newlines)
+          try {
+            const sanitized = target
+              .replace(/\\n/g, '\n')
+              .replace(/\\"/g, '"')
+              .replace(/\\\\"/g, '\\"');
+            return JSON.parse(sanitized);
+          } catch {
+            throw new Error("Recursive parse failed.");
+          }
         }
       };
       assessment = cleanJson(raw);
     } catch (e: any) {
-      throw new Error(`Professor's Diagnosis Unreadable: ${JSON.stringify(aiResponse.response).substring(0, 100)}...`);
+      throw new Error(`Professor's Diagnosis Unreadable: ${aiResponse.response.substring(0, 100)}...`);
     }
 
     // --- 6.5 CHROMA BACKDROP SYNTHESIS (Mastery Reward) ---
