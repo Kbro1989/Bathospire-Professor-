@@ -108,12 +108,17 @@ GUIDELINES FOR THE PROFESSOR:
     // --- PHASE 1: THE EYE (Vision Specialist) ---
     const visionResponse: any = await env.AI.run("@cf/meta/llama-3.2-11b-vision-instruct", {
       image: [image],
-      prompt: `Strictly critique this specimen for "${targetWord}". 
-               1. If the shape is NOT the letter "${pureTarget}" (e.g. just a line, a hyphen, or empty), assign a score of 1.0.
-               2. Analyze cursive formation compared to the Kindergarten guidelines:
-                  Sky at V=25%, Middle at V=50%, Baseline at V=75%.
-               3. If drawing is "miniature" or "floating", mention it.
-               Return a clinical, brief description of the formation quality.`,
+      prompt: `Strictly critique this CURSIVE specimen for "${targetWord}". 
+               
+               CATEGORICAL CONSTRAINTS:
+               1. WE ARE ONLY MASTERING LOWERCASE. If the student draws an UPPERCASE "${pureTarget.toUpperCase()}" instead of a LOWERCASE "${pureTarget}", assign a score of 2.0 and scold them for using the wrong case.
+               2. If the shape is NOT the letter "${pureTarget}" (e.g. just a line, a hyphen), assign a score of 1.0.
+               
+               SPATIAL AUDIT:
+               - The body of the lowercase "${pureTarget}" MUST sit between the BASELINE (V=75%) and the MEAN LINE (V=50%). 
+               - If it reaches the TOP LINE (V=25%), it is too tall for a lowercase body.
+               
+               Return a brief, clinical description of the formation quality.`,
       max_tokens: 512
     });
     const visualCritique = visionResponse.response || "Inconclusive scan.";
@@ -123,8 +128,8 @@ GUIDELINES FOR THE PROFESSOR:
 Synthesize a forensic report into a strictly valid JSON object.
 
 ANALYSIS GUIDELINES:
-- IF Specimen is NOT a character (e.g. just a hyphen), SCORE IS 1.0.
-- IF SCALE RATIO < 0.4 (Miniature), MAX SCORE IS 5.0.
+- CATEGORICAL ERROR: If Phase 1 detected an UPPERCASE letter when LOWERCASE was requested, MAX SCORE IS 3.0.
+- SCALE ERROR: If SCALE RATIO < 0.4 (Miniature), MAX SCORE IS 5.0.
 - PASSING GRADE (next_challenge_eligibility = true) is Score >= 7.0.
 - MASTERY STATUS (mastery_status = 'Mastered') is Score >= 8.5.
 
