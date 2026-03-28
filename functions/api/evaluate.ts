@@ -16,220 +16,111 @@ export async function onRequestPost(context: any) {
       subjectId, harshness, kinematics = [] 
     } = body;
     
-    // --- 2. DEFENSIVE BINDING CHECKS ---
-    if (!env.AI) {
-      return new Response(JSON.stringify({ error: "AI Binding Offline." }), { status: 500 });
-    }
-    if (!env.SUBJECT_ARCHIVE) {
-      return new Response(JSON.stringify({ error: "KV Binding Offline." }), { status: 500 });
-    }
+    // --- 2. DEFENSIVE BINDING ---
+    if (!env.AI) return new Response(JSON.stringify({ error: "AI Binding Offline." }), { status: 500 });
+    if (!env.SUBJECT_ARCHIVE) return new Response(JSON.stringify({ error: "KV Offline." }), { status: 500 });
 
-    // --- 3. GEOSPATIAL CONTEXT ---
+    // --- 3. GEOSPATIAL & FORENSIC HELPERS ---
     const cf = (request as any).cf || {};
-    const location = {
-      city: cf.city || "Unknown Depth",
-      country: cf.country || "The Open Sea",
-      lat: cf.latitude,
-      lon: cf.longitude
-    };
+    const location = { city: cf.city || "Abyss", country: cf.country || "Sea" };
 
-    // --- 4. JAVASCRIPT FORENSIC HELPERS: Tactile Data Extraction ---
     const calculateForensics = (strokes: any[][]) => {
       let uMin = 1, uMax = 0, vMin = 1, vMax = 0;
-      let totalPoints = 0, totalPressure = 0;
-      let sumU = 0, sumV = 0;
-      
-      strokes.forEach(stroke => {
-        stroke.forEach(pt => {
-          uMin = Math.min(uMin, pt.u);
-          uMax = Math.max(uMax, pt.u);
-          vMin = Math.min(vMin, pt.v);
-          vMax = Math.max(vMax, pt.v);
-          totalPressure += (pt.p || 0.5);
-          sumU += pt.u;
-          sumV += pt.v;
-          totalPoints++;
-        });
-      });
-
-      const userCentroid = totalPoints > 0 ? { u: sumU / totalPoints, v: sumV / totalPoints } : { u: 0.5, v: 0.5 };
-
+      let totalPts = 0, totalP = 0, sumU = 0, sumV = 0;
+      strokes.forEach(s => s.forEach(pt => {
+        uMin = Math.min(uMin, pt.u); uMax = Math.max(uMax, pt.u);
+        vMin = Math.min(vMin, pt.v); vMax = Math.max(vMax, pt.v);
+        totalP += (pt.p || 0.5); sumU += pt.u; sumV += pt.v; totalPts++;
+      }));
       return {
-        bounds: { 
-          u: [uMin.toFixed(3), uMax.toFixed(3)], 
-          v: [vMin.toFixed(3), vMax.toFixed(3)] 
-        },
-        centroid: userCentroid,
-        metrics: {
-          strokeCount: strokes.length,
-          avgPressure: totalPoints > 0 ? (totalPressure / totalPoints).toFixed(2) : "0.50",
-          pointDensity: totalPoints
-        }
+        bounds: { u: [uMin.toFixed(3), uMax.toFixed(3)], v:[vMin.toFixed(3), vMax.toFixed(3)] },
+        centroid: totalPts > 0 ? { u: sumU / totalPts, v: sumV / totalPts } : { u: 0.5, v: 0.5 },
+        metrics: { strokes: strokes.length, avgP: (totalP / totalPts || 0.5).toFixed(2), pointDensity: totalPts }
       };
     };
-
     const forensics = calculateForensics(kinematics);
 
-    // --- 5. CALLIGRAPHIC REFERENCE LIBRARY ---
-    const CALLIGRAPHIC_REFERENCES: Record<string, { path: string, centroid: { u: number, v: number } }> = {
-      'a': { 
-        path: "M 40 60 C 35 60 30 55 30 45 C 30 35 40 30 50 30 C 60 30 70 35 70 45 L 70 60", 
-        centroid: { u: 0.5, v: 0.45 } 
-      },
-      'b': { 
-        path: "M 30 80 L 30 20 C 30 10 50 10 50 20 C 50 30 30 30 30 30 C 30 45 60 45 60 65 C 60 85 30 85 30 80", 
-        centroid: { u: 0.45, v: 0.5 } 
-      },
-      'c': { 
-        path: "M 70 30 C 60 20 30 20 30 50 C 30 80 60 80 70 70", 
-        centroid: { u: 0.5, v: 0.5 } 
-      },
-      // ... same for d, e, f
+    // --- 4. CALLIGRAPHIC REFERENCE ---
+    const REFERENCES: Record<string, { path: string, centroid: { u: number, v: number } }> = {
+      'a': { path: "M 40 60 C 35 60 30 55 30 45 C 30 35 40 30 50 30 C 60 30 70 35 70 45 L 70 60", centroid: { u: 0.5, v: 0.45 } },
+      'b': { path: "M 30 80 L 30 20 C 30 10 50 10 50 20 C 50 30 30 30 30 30 C 30 45 60 45 60 65 C 60 85 30 85 30 80", centroid: { u: 0.45, v: 0.5 } },
+      'c': { path: "M 70 30 C 60 20 30 20 30 50 C 30 80 60 80 70 70", centroid: { u: 0.5, v: 0.5 } },
+      // ... more letters would go here
     };
+    const targetRef = REFERENCES[targetWord.toLowerCase()] || { path: "M 20 50 L 80 50", centroid: { u: 0.5, v: 0.5 } };
+    const drift = Math.sqrt(Math.pow(forensics.centroid.u - targetRef.centroid.u, 2) + Math.pow(forensics.centroid.v - targetRef.centroid.v, 2)).toFixed(3);
 
-    const targetRef = CALLIGRAPHIC_REFERENCES[targetWord.toLowerCase()] || { path: "M 20 50 L 80 50", centroid: { u: 0.5, v: 0.5 } };
-    
-    // --- SPATIAL ALIGNMENT (Chroma Logic) ---
-    const du = forensics.centroid.u - targetRef.centroid.u;
-    const dv = forensics.centroid.v - targetRef.centroid.v;
-    const spatialDrift = Math.sqrt(du * du + dv * dv).toFixed(3);
-
-    const SYSTEM_PROMPT = `You are PROFESSOR BATHYSPHERE, a master calligrapher and pedagogical analyst.
-Your mission is to provide high-fidelity assessments of cursive specimens.
-
-MASTER REFERENCE LIBRARY (Canonical Cursive):
-The following SVG path is a PERFECT reconstruction of '${targetWord}':
-- Canonical Path: "${targetRef.path}"
-- Ideal Centroid: U[${targetRef.centroid.u}], V[${targetRef.centroid.v}]
-
-SPATIAL FORENSIC DATA:
-- CENTROID DRIFT (0-1 Scale): ${spatialDrift} (Lower is better precision)
-- USER CENTROID: U[${forensics.centroid.u.toFixed(3)}], V[${forensics.centroid.v.toFixed(3)}]
-- BOUNDS: U[${forensics.bounds.u}], V[${forensics.bounds.v}]
-- STROKES: ${forensics.metrics.strokeCount}
-- PRESSURE: ${forensics.metrics.avgPressure}/1.0
-
-INSTRUCTIONS:
-1. Compare visual specimen with Canonical Path and Spatial Data.
-2. In 'trace_pad_underlay', YOU MUST return a high-fidelity SVG path based on the Canonical Path.
-3. If the student drifted spatially (Drift > 0.1), in your 'voice_response', ADDRESS THE POSITIONING error specifically (e.g., "Your loop is shifted too far to the right").
-4. Return ONLY valid JSON. Start with {`;
-
-    const prompt = `Evaluate cursive handwriting specimen:
-###
-TARGET: ${targetWord}
-STREAK: ${streak}
-###
-
-EXAMPLE OUTPUT PROTOCOL:
-{
-  "academic_assessment": { "score": 8.5, "tier_classification": "Advanced", "mastery_status": "Mastered", "next_challenge_eligibility": true, "difficulty_adjustment": "Maintain" },
-  "diagnostic_analysis": { "primary_failure_mode": "None", "kinematic_anomaly": "None", "remediation_prescription": "Focus on fluid rotation.", "information_disclosure_level": 5 },
-  "voice_response": { "professor_persona": "Clinical and impressed.", "emotional_valence": "Positive", "roast_intensity": 2, "hype_coefficient": 8, "emotional_transcription": "Exquisite line work." },
-  "gated_unlocks": { "technique_revealed": "None", "historical_exemplar": "None", "visual_feedback": "Perfect alignment.", "next_challenge_preview": "None", "trace_pad_underlay": "${targetRef}" },
-  "adaptive_parameters": { "recommended_next_target": "b", "next_curriculum_stage": "Letters", "scaffolding_level": "Minimal", "cognitive_load_adjustment": "Optimal", "retrieval_practice_prompt": "Recall the loop." }
-}
-
-INSTRUCTION: Analyze image and return ONLY JSON. Start with {`;
-
-    // 6. Handwriting Evaluation with Vision Model
-    const aiResponse: any = await env.AI.run("@cf/meta/llama-3.2-11b-vision-instruct", {
+    // --- PHASE 1: THE EYE (Vision Specialist) ---
+    // Objective: Textual description of handwriting quality only.
+    const visionResponse: any = await env.AI.run("@cf/meta/llama-3.2-11b-vision-instruct", {
       image: [image],
-      prompt: SYSTEM_PROMPT + "\n\nVISUAL CONTEXT: " + prompt,
-      max_tokens: 2048
+      prompt: `Critique this cursive specimen for "${targetWord}". 
+               Focus on line quality, formation errors, and calligraphic accuracy. 
+               Be clinical and professional. Describe exactly what you see.`,
+      max_tokens: 512
     });
+    const visualCritique = visionResponse.response || "Inconclusive scan.";
 
-    if (!aiResponse || !aiResponse.response) {
-      throw new Error("The Professor is unresponsive. Ocean interference likely.");
-    }
+    // --- PHASE 2: THE BRAIN (Synthesis Specialist) ---
+    // Objective: Structured JSON generation using critique + forensics.
+    const brainPrompt = `You are PROFESSOR BATHYSPHERE. 
+Synthesize a forensic report into a strictly valid JSON object.
+
+VISUAL CRITIQUE: "${visualCritique}"
+FORENSIC DATA: Strokes: ${forensics.metrics.strokes}, Pressure: ${forensics.metrics.avgP}, Spatial Drift: ${drift}
+TARGET WORD: "${targetWord}"
+CANONICAL PATH: "${targetRef.path}"
+
+LAB PROTOCOL: 
+Output ONLY valid JSON.
+{
+  "academic_assessment": { "score": 1-10, "tier_classification": "string", "mastery_status": "Mastered/Fail", "next_challenge_eligibility": true/false, "difficulty_adjustment": "Maintain/Ease/Advance" },
+  "diagnostic_analysis": { "primary_failure_mode": "string", "spatial_drift": ${drift}, "remediation_prescription": "string", "information_disclosure_level": 5 },
+  "voice_response": { "professor_persona": "Clinical", "emotional_valence": "string", "roast_intensity": 1-10, "hype_coefficient": 1-10, "emotional_transcription": "A professor-esque summary of the critique and forensics." },
+  "gated_unlocks": { "technique_revealed": "string", "historical_exemplar": "string", "visual_feedback": "string", "next_challenge_preview": "string", "trace_pad_underlay": "${targetRef.path}" },
+  "adaptive_parameters": { "recommended_next_target": "string", "next_curriculum_stage": "Letters/Words/Sentences" }
+}`;
+
+    const brainResponse: any = await env.AI.run("@cf/meta/llama-3.1-8b-instruct", {
+      prompt: brainPrompt,
+      max_tokens: 1024
+    });
 
     let assessment: any;
     try {
-      const rawResponse = aiResponse.response;
-      
-      const heuristicClean = (input: string): any => {
-        if (typeof input !== 'string') return input;
-
-        // 1. Markdown & Preamble Removal
-        let target = input.replace(/```json/g, "").replace(/```/g, "").trim();
-        const firstBrace = target.indexOf('{');
-        const lastBrace = target.lastIndexOf('}');
-        if (firstBrace === -1 || lastBrace === -1) throw new Error("No JSON found.");
-        target = target.substring(firstBrace, lastBrace + 1);
-
-        // 2. Loose-JSON Sanitization
-        // Remove trailing commas: ,} -> } and ,] -> ]
-        target = target.replace(/,\s*([}\]])/g, '$1');
-        // Remove comments: // or /* */
-        target = target.replace(/\/\/.*$/gm, '');
-        target = target.replace(/\/\*[\s\S]*?\*\//g, '');
-        // Escape literal newlines remaining in strings (risky but often necessary)
-        // target = target.replace(/(?<=:.*"[^"]*)\n(?=[^"]*"[^"]*[,}])/g, "\\n");
-
-        try {
-          const parsed = JSON.parse(target);
-          if (typeof parsed === 'string') return heuristicClean(parsed);
-          return parsed;
-        } catch (e) {
-          // Failure: Try deep unescape
-          try {
-            const sanitized = target
-              .replace(/\\n/g, '\n')
-              .replace(/\\"/g, '"')
-              .replace(/\\\\"/g, '\\"');
-            const secondAttempt = JSON.parse(sanitized);
-            if (typeof secondAttempt === 'string') return heuristicClean(secondAttempt);
-            return secondAttempt;
-          } catch (e2) {
-             // FINAL STAND: Try one last time with a completely stripped version
-             const desperate = target.replace(/[\n\r\t]/g, " ");
-             return JSON.parse(desperate);
-          }
-        }
+      const raw = brainResponse.response;
+      const cleanJson = (input: string): any => {
+        const first = input.indexOf('{'); const last = input.lastIndexOf('}');
+        if (first === -1 || last === -1) throw new Error("JSON Missing.");
+        let target = input.substring(first, last+1).replace(/,\s*([}\]])/g, '$1');
+        return JSON.parse(target);
       };
-
-      assessment = heuristicClean(rawResponse);
-    } catch (e: any) {
-      throw new Error(`Professor's Diagnosis Unreadable: ${aiResponse.response.substring(0, 100)}...`);
+      assessment = cleanJson(raw);
+    } catch (e) {
+      throw new Error(`Brain Synthesis Offline: ${brainResponse.response.substring(0, 100)}`);
     }
 
-    // --- 6.5 CHROMA BACKDROP SYNTHESIS (Mastery Reward) ---
-    if (assessment.academic_assessment.score >= 8.0 && env.AI) {
+    // --- PHASE 3: THE ARTIST (Art Specialist) ---
+    if (assessment.academic_assessment.score >= 8.0) {
       try {
-        const backdropPrompt = `A cinematic, ultra-realistic bioluminescent deep-sea ocean floor scene. In the center, glowing neon coral reefs and ethereal marine life have grown into the perfect shape of the cursive letter "${targetWord}". Ethereal light beams filtering through dark water, 8k resolution, magical atmosphere.`;
-        
-        const photoResponse: any = await env.AI.run("@cf/black-forest-labs/flux-1-schnell", {
-          prompt: backdropPrompt,
+        const artResponse: any = await env.AI.run("@cf/black-forest-labs/flux-1-schnell", {
+          prompt: `A bioluminescent deep-sea reef grown into the shape of cursive letter "${targetWord}". Cinematic, 8k.`,
           num_steps: 4
         });
-
-        if (photoResponse && photoResponse.image) {
-          assessment.gated_unlocks.visual_feedback = `data:image/png;base64,${photoResponse.image}`;
-        }
-      } catch (artError) {
-        console.error("Art Synthesis Failed:", artError);
-        // Fail silently; don't break the assessment for a missing backdrop
-      }
+        if (artResponse?.image) assessment.gated_unlocks.visual_feedback = `data:image/png;base64,${artResponse.image}`;
+      } catch (ae) { console.error("Art failed", ae); }
     }
 
-    // 7. Persistent Archive Write-Back
+    // --- 7. ARCHIVE & RETURN ---
     await env.SUBJECT_ARCHIVE.put(`subject:${subjectId}:record`, JSON.stringify({
       lastPerformance: assessment,
       history: [assessment.academic_assessment.score, ...scoreHistory].slice(0, 10),
-      ageRange,
-      educationalLevel,
-      location,
-      timestamp: new Date().toISOString()
+      ageRange, location, timestamp: new Date().toISOString()
     }));
 
-    return new Response(JSON.stringify(assessment), {
-      headers: { "Content-Type": "application/json" }
-    });
+    return new Response(JSON.stringify(assessment), { headers: { "Content-Type": "application/json" } });
 
   } catch (error: any) {
-    return new Response(JSON.stringify({ error: error.message }), { 
-      status: 500,
-      headers: { "Content-Type": "application/json" }
-    });
+    return new Response(JSON.stringify({ error: error.message }), { status: 500, headers: { "Content-Type": "application/json" } });
   }
 }
