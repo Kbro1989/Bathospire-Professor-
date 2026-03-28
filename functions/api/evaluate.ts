@@ -97,7 +97,7 @@ Return JSON:
   "adaptive_parameters": { "recommended_next_target": string, "next_curriculum_stage": string, "scaffolding_level": string, "cognitive_load_adjustment": string, "retrieval_practice_prompt": string }
 }`;
 
-    // 1. Handwriting Evaluation with Vision Model (Multimodal Schema)
+    // 1. Handwriting Evaluation with Vision Model (Image URL Data URI Schema)
     const aiResponse: any = await env.AI.run("@cf/meta/llama-3.2-11b-vision-instruct", {
       messages: [
         { role: "system", content: SYSTEM_PROMPT },
@@ -105,7 +105,7 @@ Return JSON:
           role: "user", 
           content: [
             { type: "text", text: "Analyze the attached specimen." },
-            { type: "image", image: [...binaryImage] }
+            { type: "image_url", image_url: { url: `data:image/jpeg;base64,${image}` } }
           ]
         }
       ]
