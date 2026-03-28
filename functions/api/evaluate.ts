@@ -146,35 +146,43 @@ INSTRUCTION: Analyze image and return ONLY JSON. Start with {`;
     let assessment: any;
     try {
       const raw = aiResponse.response;
-      const cleanJson = (input: string): any => {
-        // 1. Base Case: already an object
+      
+      const heuristicClean = (input: string): any => {
         if (typeof input !== 'string') return input;
-        
-        // 2. Identify and Extract JSON block (find first { and last })
-        const firstChar = input.indexOf('{');
-        const lastChar = input.lastIndexOf('}');
-        if (firstChar === -1 || lastChar === -1) throw new Error("No JSON block found.");
-        
-        let target = input.substring(firstChar, lastChar + 1);
 
-        // 3. Recursive attempt to decode (handles double-encoded strings)
+        // 1. Remove Markdown code blocks if present
+        let target = input.replace(/```json/g, "").replace(/```/g, "").trim();
+
+        // 2. Identify and Extract first valid JSON Object
+        const firstBrace = target.indexOf('{');
+        const lastBrace = target.lastIndexOf('}');
+        if (firstBrace === -1 || lastBrace === -1) throw new Error("No JSON object extracted.");
+        
+        target = target.substring(firstBrace, lastBrace + 1);
+
+        // 3. Attempt parsing with common sanitizations
         try {
+          // Standard Parse
           const parsed = JSON.parse(target);
-          return typeof parsed === 'object' ? parsed : cleanJson(parsed);
+          if (typeof parsed === 'string') return heuristicClean(parsed); // Recursive unescape
+          return parsed;
         } catch (e) {
-          // 4. Sanitize and try one last time (handles escaped quotes/newlines)
+          // Failure: Try aggressive unescape (handles double-escaped artifacts from gateways)
           try {
             const sanitized = target
               .replace(/\\n/g, '\n')
               .replace(/\\"/g, '"')
               .replace(/\\\\"/g, '\\"');
-            return JSON.parse(sanitized);
-          } catch {
-            throw new Error("Recursive parse failed.");
+            const secondAttempt = JSON.parse(sanitized);
+            if (typeof secondAttempt === 'string') return heuristicClean(secondAttempt);
+            return secondAttempt;
+          } catch (e2) {
+            throw new Error(`Parse Failed: ${e2}`);
           }
         }
       };
-      assessment = cleanJson(raw);
+
+      assessment = heuristicClean(raw);
     } catch (e: any) {
       throw new Error(`Professor's Diagnosis Unreadable: ${aiResponse.response.substring(0, 100)}...`);
     }
