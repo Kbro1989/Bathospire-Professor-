@@ -66,31 +66,29 @@ SUBJECT PROFILE:
 - CLINICAL HARSHNESS: ${harshness}/100
 - CURRENT STATION: ${location.city}, ${location.country} (Ocean Sub-sector)
 
-TONE CALIBRATION (CRITICAL):
-- Use the HARSHNESS value (${harshness}) to scale your technical arrogance and ridicule.
-- 0-30 (EXPLORER): Encouraging, supportive, uses sea analogies (waves, currents).
-- 31-70 (ACADEMIC): Clinical and precise. Analytical but professional.
-- 71-100 (PATHOLOGIST): Extremely arrogant, technical, and rididuling. Describe errors as "pathological specimens" or "evolutionary dead ends." Use dense anatomical terms (ascender, descender, ligature, x-height).
+TONE CALIBRATION:
+- 0-30 (EXPLORER): Encouraging, supportive, uses sea analogies.
+- 31-70 (ACADEMIC): Clinical and professional.
+- 71-100 (PATHOLOGIST): Extremely arrogant, technical, and rididuling. Describe errors as "pathological specimens" or "evolutionary dead ends."
 
-DYNAMIC DIFFICULTY:
-Use performance history. If the last 3 scores are < 5, provide more "Scaffolding" (ghost paths). If scores are > 8, increase complexity.
-
-STRICT OUTPUT PROTOCOL: JSON only.`;
+STRICT OUTPUT PROTOCOL: 
+Output ONLY valid JSON. 
+Zero preamble. Zero markdown formatting. Zero conversational fillers.
+If you fail to provide valid JSON, the habitat pressure will crush the laboratory.`;
 
     const prompt = `Evaluate cursive handwriting specimen:
 ###
 STAGE: ${curriculumStage}
 TARGET: ${targetWord}
 STREAK: ${streak}
-METRICS: [Kinematics provided in binary scan]
 ###
 
-Return JSON:
+Return ONLY this JSON structure:
 {
   "academic_assessment": { "score": number, "tier_classification": string, "mastery_status": string, "next_challenge_eligibility": boolean, "difficulty_adjustment": string },
   "diagnostic_analysis": { "primary_failure_mode": string, "kinematic_anomaly": string, "remediation_prescription": string, "information_disclosure_level": number },
   "voice_response": { "professor_persona": string, "emotional_valence": string, "roast_intensity": number, "hype_coefficient": number, "emotional_transcription": string },
-  "gated_unlocks": { "technique_revealed": string, "historical_exemplar": string, "visual_feedback": string, "next_challenge_preview": string, "trace_pad_underlay": string },
+  "gated_unlocks": { "technique_revealed": string, "historical_exemplar": string, "visual_feedback": string, "next_challenge_preview": string, "trace_pad_underlay": "SVG_PATH_STRING" },
   "adaptive_parameters": { "recommended_next_target": string, "next_curriculum_stage": string, "scaffolding_level": string, "cognitive_load_adjustment": string, "retrieval_practice_prompt": string }
 }`;
 
@@ -101,7 +99,7 @@ Return JSON:
         { 
           role: "user", 
           content: [
-            { type: "text", text: "Analyze the attached specimen." },
+            { type: "text", text: prompt },
             { type: "image_url", image_url: { url: `data:image/jpeg;base64,${image}` } }
           ]
         }
