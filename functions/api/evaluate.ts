@@ -40,17 +40,34 @@ export async function onRequestPost(context: any) {
     };
     const forensics = calculateForensics(kinematics);
 
-    // --- 4. CALLIGRAPHIC REFERENCE ---
+    // --- 4. CALLIGRAPHIC REFERENCE LIBRARY (Authentic Looped Cursive) ---
     const pureTarget = targetWord.split(' ').pop()?.toLowerCase() || targetWord.toLowerCase();
     
     const REFERENCES: Record<string, { path: string, centroid: { u: number, v: number } }> = {
-      'a': { path: "M 40 60 C 35 60 30 55 30 45 C 30 35 40 30 50 30 C 60 30 70 35 70 45 L 70 60", centroid: { u: 0.5, v: 0.45 } },
-      'b': { path: "M 30 80 L 30 20 C 30 10 50 10 50 20 C 50 30 30 30 30 30 C 30 45 60 45 60 65 C 60 85 30 85 30 80", centroid: { u: 0.45, v: 0.5 } },
-      'c': { path: "M 70 30 C 60 20 30 20 30 50 C 30 80 60 80 70 70", centroid: { u: 0.5, v: 0.5 } },
-      'd': { path: "M 70 10 L 70 60 M 70 45 C 70 35 60 30 50 30 C 40 30 30 35 30 45 C 30 55 40 60 50 60 C 60 60 70 55 70 45", centroid: { u: 0.5, v: 0.45 } },
-      'e': { path: "M 30 50 C 30 30 70 30 70 50 C 70 70 30 70 30 50 L 70 50", centroid: { u: 0.5, v: 0.5 } },
-      'f': { path: "M 50 80 L 50 10 C 50 0 70 0 70 10 C 70 20 50 20 50 30 L 50 60 M 35 45 L 65 45", centroid: { u: 0.5, v: 0.3 } },
-      // ... more letters would go here
+      'a': { 
+        path: "M 70 45 C 70 35 60 30 50 30 C 40 30 30 35 30 45 C 30 55 40 60 50 60 C 60 60 70 55 70 45 M 70 30 L 70 60 C 70 65 75 70 85 70", 
+        centroid: { u: 0.5, v: 0.45 } 
+      },
+      'b': { 
+        path: "M 30 80 L 30 25 C 30 10 50 10 50 25 C 50 40 30 40 30 40 C 30 50 65 50 65 70 C 65 90 30 90 30 80", 
+        centroid: { u: 0.45, v: 0.5 } 
+      },
+      'c': { 
+        path: "M 75 40 C 70 30 50 25 35 45 C 25 65 45 80 65 75 C 75 70 80 60 80 60", 
+        centroid: { u: 0.5, v: 0.5 } 
+      },
+      'd': { 
+        path: "M 75 15 L 75 75 M 75 50 C 75 35 60 30 45 30 C 30 30 25 45 25 55 C 25 70 40 80 60 75 C 70 70 75 60 75 50", 
+        centroid: { u: 0.5, v: 0.45 } 
+      },
+      'e': { 
+        path: "M 30 65 C 30 65 80 65 80 50 C 80 25 30 25 30 50 C 30 75 80 75 90 65", 
+        centroid: { u: 0.5, v: 0.5 } 
+      },
+      'f': { 
+        path: "M 55 85 L 55 15 C 55 0 85 0 85 15 C 85 35 55 35 55 40 L 55 85 M 35 50 L 75 50", 
+        centroid: { u: 0.5, v: 0.3 } 
+      },
     };
     const targetRef = REFERENCES[pureTarget] || { path: "M 20 50 L 80 50", centroid: { u: 0.5, v: 0.5 } };
     const drift = Math.sqrt(Math.pow(forensics.centroid.u - targetRef.centroid.u, 2) + Math.pow(forensics.centroid.v - targetRef.centroid.v, 2)).toFixed(3);
