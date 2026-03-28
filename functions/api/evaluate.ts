@@ -116,10 +116,11 @@ Start with {`;
 
     let assessment: any;
     try {
-      const jsonMatch = aiResponse.response.match(/\{[\s\S]*\}/);
-      assessment = JSON.parse(jsonMatch ? jsonMatch[0] : aiResponse.response);
+      const responseText = typeof aiResponse.response === 'object' ? JSON.stringify(aiResponse.response) : aiResponse.response;
+      const jsonMatch = responseText.match(/\{[\s\S]*\}/);
+      assessment = JSON.parse(jsonMatch ? jsonMatch[0] : responseText);
     } catch (e: any) {
-      throw new Error("Invalid AI response format: " + aiResponse.response);
+      throw new Error(`Invalid AI response format: ${JSON.stringify(aiResponse.response)}`);
     }
 
     // 2. Persistent Archive Write-Back
