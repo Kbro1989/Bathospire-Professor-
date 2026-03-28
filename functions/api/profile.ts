@@ -3,10 +3,7 @@ interface Env {
   SUBJECT_ARCHIVE: KVNamespace;
 }
 
-export const onRequestGet = async (context: {
-  request: Request;
-  env: Env;
-}) => {
+export async function onRequestGet(context: any) {
   const { request, env } = context;
   const url = new URL(request.url);
   const subjectId = url.searchParams.get("subjectId");
@@ -25,10 +22,7 @@ export const onRequestGet = async (context: {
   });
 };
 
-export const onRequestPost = async (context: {
-  request: Request;
-  env: Env;
-}) => {
+export async function onRequestPost(context: any) {
   const { request, env } = context;
   const { subjectId, profile } = await request.json() as { subjectId: string, profile: any };
 

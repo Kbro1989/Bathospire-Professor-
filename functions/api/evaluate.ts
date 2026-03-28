@@ -4,10 +4,7 @@ interface Env {
   SUBJECT_ARCHIVE: KVNamespace;
 }
 
-export const onRequestPost = async (context: {
-  request: Request;
-  env: Env;
-}) => {
+export async function onRequestPost(context: any) {
   const { request, env } = context;
   
   try {
@@ -55,7 +52,7 @@ export const onRequestPost = async (context: {
       lon: cf.longitude
     };
 
-    const binaryImage = Uint8Array.from(atob(image), c => c.charCodeAt(0));
+    // const binaryImage = Uint8Array.from(atob(image), c => c.charCodeAt(0)); // No longer needed for multimodal schema
 
     const SYSTEM_PROMPT = `You are PROFESSOR BATHYSPHERE, a tenured calligrapher-marine biologist hybrid.
 Pedagogical approach: Mastery learning (8/10 threshold).
