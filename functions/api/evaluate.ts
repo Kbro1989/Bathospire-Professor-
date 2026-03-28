@@ -8,15 +8,15 @@ export async function onRequestPost(context: any) {
   const { request, env } = context;
   
   try {
-    // --- DATA EXTRACTION & FORENSICS ---
+    // --- 1. DATA EXTRACTION & FORENSICS ---
     const body = await request.json() as any;
     const { 
-      image, curriculumStage, targetWord, streak, 
+      image, targetWord, streak, 
       ageRange, educationalLevel, scoreHistory, 
       subjectId, harshness, kinematics = [] 
     } = body;
     
-    // --- DEFENSIVE BINDING CHECKS ---
+    // --- 2. DEFENSIVE BINDING CHECKS ---
     if (!env.AI) {
       return new Response(JSON.stringify({ error: "AI Binding Offline." }), { status: 500 });
     }
@@ -24,7 +24,7 @@ export async function onRequestPost(context: any) {
       return new Response(JSON.stringify({ error: "KV Binding Offline." }), { status: 500 });
     }
 
-    // --- GEOSPATIAL CONTEXT ---
+    // --- 3. GEOSPATIAL CONTEXT ---
     const cf = (request as any).cf || {};
     const location = {
       city: cf.city || "Unknown Depth",
@@ -33,7 +33,7 @@ export async function onRequestPost(context: any) {
       lon: cf.longitude
     };
 
-    // --- JAVASCRIPT FORENSIC HELPERS: Tactile Data Extraction ---
+    // --- 4. JAVASCRIPT FORENSIC HELPERS: Tactile Data Extraction ---
     const calculateForensics = (strokes: any[][]) => {
       let uMin = 1, uMax = 0, vMin = 1, vMax = 0;
       let totalPoints = 0, totalPressure = 0;
@@ -64,29 +64,43 @@ export async function onRequestPost(context: any) {
 
     const forensics = calculateForensics(kinematics);
 
-    const SYSTEM_PROMPT = `You are PROFESSOR BATHYSPHERE, a tenured calligrapher-marine biologist hybrid.
-Pedagogical approach: Mastery learning (8/10 threshold).
-Persona: Critical, clinical, but adapts fluidly based on the subject's profile, location, and Clinical Harshness calibration.
+    // --- 5. CALLIGRAPHIC REFERENCE LIBRARY: Standard Cursive Paths (0-100 scale) ---
+    const CALLIGRAPHIC_REFERENCES: Record<string, string> = {
+      'a': "M 40 60 C 35 60 30 55 30 45 C 30 35 40 30 50 30 C 60 30 70 35 70 45 L 70 60",
+      'b': "M 30 80 L 30 20 C 30 10 50 10 50 20 C 50 30 30 30 30 30 C 30 45 60 45 60 65 C 60 85 30 85 30 80",
+      'c': "M 70 30 C 60 20 30 20 30 50 C 30 80 60 80 70 70",
+      'd': "M 70 20 L 70 80 M 70 45 C 70 35 60 30 50 30 C 40 30 30 35 30 45 C 30 55 40 60 50 60 C 60 60 70 55 70 45",
+      'e': "M 30 50 C 30 30 70 30 70 50 C 70 70 30 70 30 50 L 70 50",
+      'f': "M 50 80 L 50 10 C 50 0 70 0 70 10 C 70 20 50 20 50 30 L 50 60 M 35 45 L 65 45",
+      // ... more letters as needed
+    };
 
-FORENSIC LAB DATA (Tactile Specs):
-- STROKES DETECTED: ${forensics.metrics.strokeCount}
-- AVG PRESSURE: ${forensics.metrics.avgPressure}/1.0
-- SPATIAL BOUNDS (0-1 Scale): U[${forensics.bounds.u}], V[${forensics.bounds.v}]
+    const targetRef = CALLIGRAPHIC_REFERENCES[targetWord.toLowerCase()] || "M 20 50 L 80 50";
 
-SUBJECT PROFILE:
-- ID: ${subjectId}
-- Age: ${ageRange}
-- Education: ${educationalLevel}
-- PERFORMANCE HISTORY: [${scoreHistory.join(", ")}]
-- CLINICAL HARSHNESS: ${harshness}/100
-- CURRENT STATION: ${location.city}, ${location.country} (Ocean Sub-sector)
+    const SYSTEM_PROMPT = `You are PROFESSOR BATHYSPHERE, a master calligrapher and pedagogical analyst.
+Your mission is to provide high-fidelity assessments of cursive specimens.
+
+MASTER REFERENCE LIBRARY (Canonical Cursive):
+The following SVG path is a PERFECT reconstruction of '${targetWord}':
+- Canonical Path: "${targetRef}"
+
+FORENSIC LAB DATA:
+- STROKES: ${forensics.metrics.strokeCount}
+- PRESSURE: ${forensics.metrics.avgPressure}/1.0
+- BOUNDS: U[${forensics.bounds.u}], V[${forensics.bounds.v}]
+
+INSTRUCTIONS:
+1. Compare visual specimen with Canonical Path.
+2. YOU MUST return a high-fidelity SVG path based on the Canonical Path provided above in 'trace_pad_underlay'.
+3. DO NOT hallucinate "squiggly" lines. Return a clean, traceable cursive path on a 0-100 scale.
+4. If score < 8.0, your path will guide the student's next attempt.
+5. Persona: Clinical, professional, but encouraging for students with no cursive background.
 
 STRICT OUTPUT PROTOCOL: 
 Output ONLY valid JSON. Zero preamble. Start with {`;
 
     const prompt = `Evaluate cursive handwriting specimen:
 ###
-STAGE: ${curriculumStage}
 TARGET: ${targetWord}
 STREAK: ${streak}
 ###
@@ -94,40 +108,28 @@ STREAK: ${streak}
 EXAMPLE OUTPUT PROTOCOL:
 {
   "academic_assessment": { "score": 8.5, "tier_classification": "Advanced", "mastery_status": "Mastered", "next_challenge_eligibility": true, "difficulty_adjustment": "Maintain" },
-  "diagnostic_analysis": { "primary_failure_mode": "None", "kinematic_anomaly": "Slight jitter on ascender", "remediation_prescription": "Focus on fluid wrist rotation.", "information_disclosure_level": 5 },
-  "voice_response": { "professor_persona": "Clinical and impressed.", "emotional_valence": "Positive", "roast_intensity": 2, "hype_coefficient": 8, "emotional_transcription": "Exquisite line work, Subject." },
-  "gated_unlocks": { "technique_revealed": "Feather-light pressure", "historical_exemplar": "Palmer Method", "visual_feedback": "Perfect baseline alignment.", "next_challenge_preview": "Connected loops", "trace_pad_underlay": "M 40 60 C 35 60 30 55 30 45 C 30 35 40 30 50 30 C 60 30 70 35 70 45 L 70 60" },
-  "adaptive_parameters": { "recommended_next_target": "b", "next_curriculum_stage": "Connected Letters", "scaffolding_level": "Minimal", "cognitive_load_adjustment": "Optimal", "retrieval_practice_prompt": "Recall the loop entry." }
+  "diagnostic_analysis": { "primary_failure_mode": "None", "kinematic_anomaly": "None", "remediation_prescription": "Focus on fluid rotation.", "information_disclosure_level": 5 },
+  "voice_response": { "professor_persona": "Clinical and impressed.", "emotional_valence": "Positive", "roast_intensity": 2, "hype_coefficient": 8, "emotional_transcription": "Exquisite line work." },
+  "gated_unlocks": { "technique_revealed": "None", "historical_exemplar": "None", "visual_feedback": "Perfect alignment.", "next_challenge_preview": "None", "trace_pad_underlay": "${targetRef}" },
+  "adaptive_parameters": { "recommended_next_target": "b", "next_curriculum_stage": "Letters", "scaffolding_level": "Minimal", "cognitive_load_adjustment": "Optimal", "retrieval_practice_prompt": "Recall the loop." }
 }
 
-INSTRUCTION: Analyze the image and return ONLY the JSON. No markdown. No intro. 
-The 'trace_pad_underlay' MUST be an anatomically correct, high-fidelity CURSIVE SVG path (d-attribute) on a 0-100 coordinate scale.
-Do not return simple arches. Return the actual cursive construction of the letter '${targetWord}'.
-Start with {`;
+INSTRUCTION: Analyze image and return ONLY JSON. Start with {`;
 
-    // 1. Handwriting Evaluation with Vision Model (Image URL Data URI Schema)
+    // 6. Handwriting Evaluation with Vision Model
     const aiResponse: any = await env.AI.run("@cf/meta/llama-3.2-11b-vision-instruct", {
-      messages: [
-        { 
-          role: "system", 
-          content: SYSTEM_PROMPT + "\n\nVISUAL CONTEXT: You are analyzing a High-Contrast Clinical Scan (Dark ink on White background). Locate the central specimen and perform a precise calligraphic audit." 
-        },
-        { 
-          role: "user", 
-          content: [
-            { type: "text", text: prompt },
-            { type: "image_url", image_url: { url: `data:image/jpeg;base64,${image}` } }
-          ]
-        }
-      ],
+      image: [image],
+      prompt: SYSTEM_PROMPT + "\n\nVISUAL CONTEXT: " + prompt,
       max_tokens: 2048
     });
+
+    if (!aiResponse || !aiResponse.response) {
+      throw new Error("The Professor is unresponsive. Ocean interference likely.");
+    }
 
     let assessment: any;
     try {
       let raw = aiResponse.response;
-      
-      // Recursive unescape for double-encoded strings from AI gateway
       const cleanJson = (input: any): any => {
         if (typeof input === 'object') return input;
         try {
@@ -138,59 +140,27 @@ Start with {`;
           return match ? JSON.parse(match[0]) : JSON.parse(input);
         }
       };
-
       assessment = cleanJson(raw);
     } catch (e: any) {
       throw new Error(`Professor's Diagnosis Unreadable: ${JSON.stringify(aiResponse.response).substring(0, 100)}...`);
     }
 
-    // 2. Persistent Archive Write-Back
-    const score = assessment.academic_assessment.score;
-    const newHistory = [score, ...scoreHistory].slice(0, 50);
-    
-    if (env.SUBJECT_ARCHIVE && subjectId) {
-      await env.SUBJECT_ARCHIVE.put(`subject:${subjectId}:record`, JSON.stringify({
-        ageRange,
-        educationalLevel,
-        scoreHistory: newHistory,
-        lastSeen: new Date().toISOString(),
-        location
-      }));
-    }
+    // 7. Persistent Archive Write-Back
+    await env.SUBJECT_ARCHIVE.put(`subject:${subjectId}:record`, JSON.stringify({
+      lastPerformance: assessment,
+      history: [assessment.academic_assessment.score, ...scoreHistory].slice(0, 10),
+      ageRange,
+      educationalLevel,
+      location,
+      timestamp: new Date().toISOString()
+    }));
 
-    // 3. Generate Speech (TTS)
-    let audioBase64 = null;
-    try {
-      const ttsResponse: any = await env.AI.run("@cf/deepgram/aura-1", {
-        text: assessment.voice_response.professor_persona
-      });
-      
-      if (ttsResponse) {
-        const arrayBuffer = await new Response(ttsResponse).arrayBuffer();
-        const bytes = new Uint8Array(arrayBuffer);
-        let binary = '';
-        for (let i = 0; i < bytes.byteLength; i++) {
-            binary += String.fromCharCode(bytes[i]);
-        }
-        audioBase64 = btoa(binary);
-      }
-    } catch (e: any) {
-      console.log("TTS failed, skipping backend audio", e.message);
-    }
-
-    return new Response(JSON.stringify({ 
-      ...assessment, 
-      audio: audioBase64,
-      location // Pass location back to frontend for HUD
-    }), {
-      headers: { 
-        "Content-Type": "application/json",
-        "Access-Control-Allow-Origin": "*" 
-      }
+    return new Response(JSON.stringify(assessment), {
+      headers: { "Content-Type": "application/json" }
     });
 
   } catch (error: any) {
-    return new Response(JSON.stringify({ error: error.message || "Unknown error" }), {
+    return new Response(JSON.stringify({ error: error.message }), { 
       status: 500,
       headers: { "Content-Type": "application/json" }
     });

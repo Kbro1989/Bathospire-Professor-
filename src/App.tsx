@@ -56,14 +56,21 @@ type AssessmentResponse = {
   audio?: string; // Base64 audio from Cloudflare backend
 };
 
+const CURRICULUM = [
+  'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 
+  'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z',
+  'sea', 'kelp', 'reef', 'tide', 'pearl', 'abyss',
+  'Hello Lab', 'Cursive Mastery', 'Professor Bathysphere'
+];
+
 export default function App() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const isDrawingRef = useRef(false);
   const [isEvaluating, setIsEvaluating] = useState(false);
   const [assessment, setAssessment] = useState<AssessmentResponse | null>(null);
   const [isSpeaking, setIsSpeaking] = useState(false);
-  const [curriculumStage, setCurriculumStage] = useState("LOWERCASE_LETTERS");
-  const [targetWord, setTargetWord] = useState("a");
+  const [curriculumIndex, setCurriculumIndex] = useState(0);
+  const targetWord = CURRICULUM[curriculumIndex];
   const [streak, setStreak] = useState(0);
 
   // Subject Profile & History
@@ -286,7 +293,6 @@ export default function App() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           image: base64Data,
-          curriculumStage,
           targetWord,
           streak,
           ageRange,
@@ -319,24 +325,23 @@ export default function App() {
         window.speechSynthesis.speak(utterance);
       }
       
-      const score = parsed.academic_assessment.score;
-      if (score >= 8) {
-        setStreak(s => s + 1);
+      // --- MASTERY GATE LOGIC ---
+      const isMastered = parsed.academic_assessment.mastery_status === "Mastered" || parsed.academic_assessment.score >= 8.0;
+      
+      if (isMastered) {
+        // Unlock Next Stage
+        setCurriculumIndex(prev => (prev + 1) % CURRICULUM.length);
+        setStreak(prev => prev + 1);
       } else {
+        // Remediation / Hold Back
         setStreak(0);
       }
 
-      setScoreHistory(prev => [score, ...prev].slice(0, 10));
-      
-      if (parsed.adaptive_parameters.recommended_next_target) {
-        setTargetWord(parsed.adaptive_parameters.recommended_next_target);
-      }
-      if (parsed.adaptive_parameters.next_curriculum_stage) {
-        setCurriculumStage(parsed.adaptive_parameters.next_curriculum_stage);
-      }
-    } catch (error) {
+      setAssessment(parsed);
+      setScoreHistory(prev => [parsed.academic_assessment.score, ...prev].slice(0, 10));
+    } catch (error: any) {
       console.error("Error evaluating:", error);
-      alert("The habitat pressure caused a communication failure. Try again.");
+      alert(error.message || "Lab results compromised. Check telemetry.");
     } finally {
       setIsEvaluating(false);
     }
@@ -471,7 +476,9 @@ export default function App() {
         `}>
           {/* Target Word Overlay */}
           <div className="absolute top-6 left-1/2 -translate-x-1/2 z-30 pointer-events-none text-center">
-            <span className="text-[10px] text-cyan-500/50 font-mono uppercase tracking-[0.2em]">{curriculumStage.replace('_', ' ')}</span>
+            <span className="text-[10px] text-cyan-500/50 font-mono uppercase tracking-[0.2em]">
+              {curriculumIndex < 26 ? "Letters" : curriculumIndex < 32 ? "Words" : "Sentences"}
+            </span>
             <h2 className="text-6xl lg:text-8xl font-cursive text-white drop-shadow-[0_0_30px_rgba(6,182,212,0.4)]">{targetWord}</h2>
           </div>
 
