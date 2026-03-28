@@ -95,7 +95,10 @@ Return ONLY this JSON structure:
     // 1. Handwriting Evaluation with Vision Model (Image URL Data URI Schema)
     const aiResponse: any = await env.AI.run("@cf/meta/llama-3.2-11b-vision-instruct", {
       messages: [
-        { role: "system", content: SYSTEM_PROMPT },
+        { 
+          role: "system", 
+          content: SYSTEM_PROMPT + "\n\nVISUAL CONTEXT: You are analyzing a High-Contrast Clinical Scan (Dark ink on White background). Locate the central specimen and perform a precise calligraphic audit." 
+        },
         { 
           role: "user", 
           content: [
