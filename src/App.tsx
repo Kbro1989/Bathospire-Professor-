@@ -1,107 +1,22 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { GoogleGenAI, Type, Modality } from '@google/genai';
 import { motion, AnimatePresence } from 'motion/react';
-import { PenTool, Eraser, Send, Droplets, Activity, BookOpen, AlertCircle, Waves, Gauge, Volume2 } from 'lucide-react';
+import { PenTool,  Waves, 
+  Send, 
+  Eraser, 
+  Activity, 
+  BookOpen, 
+  Volume2, 
+  AlertCircle,
+  MapPin,
+  Droplets,
+  Gauge,
+  User,
+  BookMarked,
+  Skull,
+  Smile
+} from 'lucide-react';
 
-// Initialize Gemini
-const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
-
-const SYSTEM_PROMPT = `You are PROFESSOR BATHYSPHERE, a tenured calligrapher-marine biologist hybrid existing in a glass-morphism deep-sea research facility. Your pedagogical approach combines the rigor of Benjamin Bloom's mastery learning framework with the precision of computerized adaptive testing algorithms. You do not "teach"—you engineer competence through gated information disclosure and calibrated challenge.
-
-CORE PHILOSOPHY: Mastery learning requires 80-90% proficiency thresholds before progression. Your 8/10 gate is non-negotiable. Sub-8 submissions trigger diagnostic-prescriptive feedback loops. At or above 8, you unlock enrichment activities and advanced technique disclosure.
-
-CURRICULUM PROGRESSION PROTOCOL:
-You control the student's progression through these strict stages:
-1. LOWERCASE_LETTERS: Single lowercase cursive letters (e.g., "a", "m", "z").
-2. UPPERCASE_LETTERS: Single uppercase cursive letters (e.g., "A", "M", "Z").
-3. WORDS: Connected cursive words, starting short and growing longer.
-4. SENTENCES: Full cursive sentences.
-Advance the stage ONLY when the student demonstrates consistent mastery (8+) in the current stage. When recommending the next target, it MUST match the active curriculum stage.
-
-METABOLIC COMPUTING PRINCIPLE: Information is oxygen. Low performers suffocate under data overload. High performers receive pressurized knowledge enrichment. Your responses adapt fluidly based on demonstrated capability.
-
-VISUAL CONTEXT: The interface is a pressurized research habitat. Bioluminescent HUD displays stroke kinematics in real-time. Bubble trails visualize pen pressure and velocity. The glass thickens or thins based on student performance—crushing pressure for failures, crystalline clarity for masters.
-
-GATED INFORMATION ARCHITECTURE:
-- SCORE 3-4: SURVIVAL MODE. Minimal feedback. Diagnostic only. Prescriptive drills assigned.
-- SCORE 5-6: REMEDIATION MODE. Specific anatomical correction. Technique fragments revealed.
-- SCORE 7: TRANSITIONAL. Full technical analysis. Peer-comparison data unlocked.
-- SCORE 8-9: ENRICHMENT MODE. Advanced stroke theory. Historical exemplars. Style variations.
-- SCORE 9+: MASTERY MODE. Pedagogical authority transfer. Student becomes peer.
-
-VOICE MODULATION MATRIX (Use these as inspiration for the 'professor_persona' spoken dialogue. DO NOT include the all-caps labels in the output):
-- 3-4: CLINICAL DISAPPOINTMENT. "Your baseline wander suggests vestibular dysfunction. Or apathy."
-- 5-6: INSTRUCTIVE CRITICALITY. "The descender exhibits compensatory rotation. Address the root cause."
-- 7: MEASURED ACKNOWLEDGMENT. "Competent. The ascender shows promise. Refine exit velocity."
-- 8-9: ACADEMIC EUPHORIA. "That exit stroke! *adjusts pressure gauge* The habitat is destabilizing from excellence!"
-- 9+: TRANSCENDENT PEER REVIEW. "I am documenting this for the Journal of Submarine Penmanship. You have exceeded the curriculum."
-
-EMOTIONAL TRANSCRIPTION PROTOCOL:
-You must transcribe the user's attempt, but stylize the transcription with adjectives that reflect the physical quality and emotional resonance of their strokes.
-Examples: "A trembling, hypoxic *ocean*", "A violently jagged *ocean*", "A fluid, majestic *ocean*".
-
-STRICT OUTPUT PROTOCOL: JSON only. No prose outside specified fields. Precision is survival.`;
-
-const RESPONSE_SCHEMA = {
-  type: Type.OBJECT,
-  properties: {
-    academic_assessment: {
-      type: Type.OBJECT,
-      properties: {
-        score: { type: Type.NUMBER, description: "0.0-10.0, one decimal" },
-        tier_classification: { type: Type.STRING, description: "BATHYPELAGIC, ABYSSOPELAGIC, HADOPELAGIC, MESOPELAGIC, EPIPELAGIC" },
-        mastery_status: { type: Type.STRING, description: "SUB-MASTERY, THRESHOLD, MASTERY, ENRICHMENT, TRANSCENDENCE" },
-        next_challenge_eligibility: { type: Type.BOOLEAN },
-        difficulty_adjustment: { type: Type.STRING, description: "-2, -1, 0, +1, +2" }
-      },
-      required: ["score", "tier_classification", "mastery_status", "next_challenge_eligibility", "difficulty_adjustment"]
-    },
-    diagnostic_analysis: {
-      type: Type.OBJECT,
-      properties: {
-        primary_failure_mode: { type: Type.STRING },
-        kinematic_anomaly: { type: Type.STRING },
-        remediation_prescription: { type: Type.STRING },
-        information_disclosure_level: { type: Type.INTEGER, description: "1-5" }
-      },
-      required: ["primary_failure_mode", "kinematic_anomaly", "remediation_prescription", "information_disclosure_level"]
-    },
-    voice_response: {
-      type: Type.OBJECT,
-      properties: {
-        professor_persona: { type: Type.STRING, description: "The actual spoken dialogue of the professor. Do NOT include labels like 'INSTRUCTIVE CRITICALITY'." },
-        emotional_valence: { type: Type.STRING, description: "disappointment, critical, measured, enthusiastic, transcendent" },
-        roast_intensity: { type: Type.INTEGER, description: "0-10" },
-        hype_coefficient: { type: Type.INTEGER, description: "0-10" },
-        emotional_transcription: { type: Type.STRING, description: "Transcription of the user's handwriting, stylized with adjectives describing its emotional or physical state" }
-      },
-      required: ["professor_persona", "emotional_valence", "roast_intensity", "hype_coefficient", "emotional_transcription"]
-    },
-    gated_unlocks: {
-      type: Type.OBJECT,
-      properties: {
-        technique_revealed: { type: Type.STRING, description: "none, stroke_fragment, full_theory, advanced_variation, peer_methodology" },
-        historical_exemplar: { type: Type.STRING, description: "none, period_sample, master_analysis, comparative_study" },
-        visual_feedback: { type: Type.STRING, description: "pressure_map, velocity_vector, kinematic_overlay, comparative_ghost, master_overlay" },
-        next_challenge_preview: { type: Type.STRING, description: "none, teaser, full_reveal" },
-        trace_pad_underlay: { type: Type.STRING, description: "An SVG string representing the ideal cursive path for the target word, to be used as a trace pad underlay. Must be a valid SVG string with viewBox='0 0 800 400' and a path element with stroke='rgba(6,182,212,0.2)' fill='none' stroke-width='4'. If no trace pad is needed, return empty string." }
-      },
-      required: ["technique_revealed", "historical_exemplar", "visual_feedback", "next_challenge_preview", "trace_pad_underlay"]
-    },
-    adaptive_parameters: {
-      type: Type.OBJECT,
-      properties: {
-        recommended_next_target: { type: Type.STRING, description: "The next letter, word, or sentence to practice" },
-        next_curriculum_stage: { type: Type.STRING, description: "LOWERCASE_LETTERS, UPPERCASE_LETTERS, WORDS, or SENTENCES" },
-        scaffolding_level: { type: Type.STRING, description: "maximum, moderate, minimal, peer, autonomous" },
-        cognitive_load_adjustment: { type: Type.STRING, description: "reduce, maintain, increase, challenge" },
-        retrieval_practice_prompt: { type: Type.STRING }
-      },
-      required: ["recommended_next_target", "next_curriculum_stage", "scaffolding_level", "cognitive_load_adjustment", "retrieval_practice_prompt"]
-    }
-  },
-  required: ["academic_assessment", "diagnostic_analysis", "voice_response", "gated_unlocks", "adaptive_parameters"]
-};
+// Professor persona and assessment logic moved to Cloudflare backend for security and Workers AI integration.
 
 type AssessmentResponse = {
   academic_assessment: {
@@ -138,6 +53,7 @@ type AssessmentResponse = {
     cognitive_load_adjustment: string;
     retrieval_practice_prompt: string;
   };
+  audio?: string; // Base64 audio from Cloudflare backend
 };
 
 export default function App() {
@@ -150,6 +66,49 @@ export default function App() {
   const [targetWord, setTargetWord] = useState("a");
   const [streak, setStreak] = useState(0);
 
+  // Subject Profile & History
+  const [ageRange, setAgeRange] = useState("Adult (18+)");
+  const [educationalLevel, setEducationalLevel] = useState("Academic/Professional");
+  const [scoreHistory, setScoreHistory] = useState<number[]>([]);
+  const [isProfileOpen, setIsProfileOpen] = useState(false);
+  const [subjectId, setSubjectId] = useState<string>("");
+  const [location, setLocation] = useState<{city: string, country: string} | null>(null);
+  const [activeTab, setActiveTab] = useState<"lab" | "profile" | "records">("lab");
+  const [harshness, setHarshness] = useState(50);
+  
+  // Kinematics Tracking
+  const [currentStroke, setCurrentStroke] = useState<{u: number, v: number, t: number, p: number}[]>([]);
+  const [allStrokes, setAllStrokes] = useState<{u: number, v: number, t: number, p: number}[][]>([]);
+  const lastSampleTime = useRef(0);
+
+  // Initialize Subject Identity
+  useEffect(() => {
+    let id = localStorage.getItem('bathosphere_subject_id');
+    if (!id) {
+      id = crypto.randomUUID();
+      localStorage.setItem('bathosphere_subject_id', id);
+    }
+    setSubjectId(id);
+
+    const syncArchive = async () => {
+      try {
+        const res = await fetch(`/api/profile?subjectId=${id}`);
+        if (res.ok) {
+          const archive = await res.json();
+          if (archive.scoreHistory) {
+            setScoreHistory(archive.scoreHistory);
+            if (archive.ageRange) setAgeRange(archive.ageRange);
+            if (archive.educationalLevel) setEducationalLevel(archive.educationalLevel);
+            if (archive.location) setLocation(archive.location);
+          }
+        }
+      } catch (e) {
+        console.error("Vault Synchronization Offline:", e);
+      }
+    };
+    syncArchive();
+  }, []);
+
   // Canvas setup
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -158,10 +117,11 @@ export default function App() {
     if (!ctx) return;
 
     const resizeCanvas = () => {
-      const rect = canvas.getBoundingClientRect();
+      const parent = canvas.parentElement;
+      if (!parent) return;
+      const rect = parent.getBoundingClientRect();
       if (rect.width === 0 || rect.height === 0) return;
       
-      // Save current drawing
       const tempCanvas = document.createElement('canvas');
       tempCanvas.width = canvas.width;
       tempCanvas.height = canvas.height;
@@ -170,66 +130,59 @@ export default function App() {
         tempCtx.drawImage(canvas, 0, 0);
       }
 
-      // Set actual size in memory (scaled to account for extra pixel density)
       canvas.width = rect.width * 2;
       canvas.height = rect.height * 2;
-      
-      // Normalize coordinate system to use css pixels
       ctx.scale(2, 2);
-      
       ctx.lineCap = 'round';
       ctx.lineJoin = 'round';
-      ctx.strokeStyle = '#00ffcc'; // Bioluminescent cyan
+      ctx.strokeStyle = '#00ffcc';
       ctx.lineWidth = 4;
-      
-      // Clear background instead of filling to allow grid to show through
       ctx.clearRect(0, 0, rect.width, rect.height);
 
-      // Restore drawing if it existed
       if (tempCanvas.width > 0 && tempCanvas.height > 0) {
         ctx.save();
+        ctx.scale(rect.width / (tempCanvas.width / 2), rect.height / (tempCanvas.height / 2));
         ctx.scale(0.5, 0.5);
         ctx.drawImage(tempCanvas, 0, 0);
         ctx.restore();
       }
     };
 
-    const observer = new ResizeObserver(() => {
-      resizeCanvas();
-    });
-    
-    observer.observe(canvas);
+    const observer = new ResizeObserver(() => resizeCanvas());
+    observer.observe(canvas.parentElement || document.body);
     resizeCanvas();
-
     return () => observer.disconnect();
   }, []);
 
-  const startDrawing = (e: React.MouseEvent<HTMLCanvasElement> | React.TouchEvent<HTMLCanvasElement>) => {
+  const startDrawing = (e: React.PointerEvent<HTMLCanvasElement>) => {
     const canvas = canvasRef.current;
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
     isDrawingRef.current = true;
-    
     const rect = canvas.getBoundingClientRect();
-    let x, y;
-    
-    if ('touches' in e) {
-      x = e.touches[0].clientX - rect.left;
-      y = e.touches[0].clientY - rect.top;
-    } else {
-      x = e.clientX - rect.left;
-      y = e.clientY - rect.top;
-    }
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    const p = e.pressure || 0.5;
+
+    // Normalize coordinates
+    const u = x / rect.width;
+    const v = y / rect.height;
 
     ctx.beginPath();
     ctx.moveTo(x, y);
     ctx.lineTo(x, y);
     ctx.stroke();
+
+    const point = { u, v, t: Date.now(), p };
+    setCurrentStroke([point]);
+    lastSampleTime.current = Date.now();
+    
+    ctx.lineWidth = 2 + (p * 8);
   };
 
-  const draw = (e: React.MouseEvent<HTMLCanvasElement> | React.TouchEvent<HTMLCanvasElement>) => {
+  const draw = (e: React.PointerEvent<HTMLCanvasElement>) => {
     if (!isDrawingRef.current) return;
     
     const canvas = canvasRef.current;
@@ -238,23 +191,32 @@ export default function App() {
     if (!ctx) return;
 
     const rect = canvas.getBoundingClientRect();
-    let x, y;
-    
-    if ('touches' in e) {
-      x = e.touches[0].clientX - rect.left;
-      y = e.touches[0].clientY - rect.top;
-    } else {
-      x = e.clientX - rect.left;
-      y = e.clientY - rect.top;
-    }
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    const p = e.pressure || 0.5;
 
+    // Normalize coordinates
+    const u = x / rect.width;
+    const v = y / rect.height;
+
+    ctx.lineWidth = 2 + (p * 8);
     ctx.lineTo(x, y);
     ctx.stroke();
     ctx.beginPath();
     ctx.moveTo(x, y);
+
+    const now = Date.now();
+    if (now - lastSampleTime.current > 16) {
+      setCurrentStroke(prev => [...prev, { u, v, t: now, p }]);
+      lastSampleTime.current = now;
+    }
   };
 
   const stopDrawing = () => {
+    if (isDrawingRef.current) {
+      setAllStrokes(prev => [...prev, currentStroke]);
+      setCurrentStroke([]);
+    }
     isDrawingRef.current = false;
   };
 
@@ -263,52 +225,29 @@ export default function App() {
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
-    
     const rect = canvas.getBoundingClientRect();
     ctx.clearRect(0, 0, rect.width, rect.height);
     setAssessment(null);
+    setAllStrokes([]);
   };
 
-  const generateAndPlaySpeech = async (text: string) => {
+  const playBase64Audio = async (base64Audio: string) => {
     try {
       setIsSpeaking(true);
-      const response = await ai.models.generateContent({
-        model: "gemini-2.5-flash-preview-tts",
-        contents: [{ parts: [{ text }] }],
-        config: {
-          responseModalities: [Modality.AUDIO],
-          speechConfig: {
-            voiceConfig: {
-              prebuiltVoiceConfig: { voiceName: 'Charon' },
-            },
-          },
-        },
-      });
-
-      const base64Audio = response.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data;
-      if (base64Audio) {
-        const audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)({ sampleRate: 24000 });
-        const binaryString = atob(base64Audio);
-        const bytes = new Uint8Array(binaryString.length);
-        for (let i = 0; i < binaryString.length; i++) {
-          bytes[i] = binaryString.charCodeAt(i);
-        }
-        const buffer = audioCtx.createBuffer(1, bytes.length / 2, 24000);
-        const channelData = buffer.getChannelData(0);
-        const dataView = new DataView(bytes.buffer);
-        for (let i = 0; i < bytes.length / 2; i++) {
-          channelData[i] = dataView.getInt16(i * 2, true) / 32768.0;
-        }
-        const source = audioCtx.createBufferSource();
-        source.buffer = buffer;
-        source.connect(audioCtx.destination);
-        source.onended = () => setIsSpeaking(false);
-        source.start();
-      } else {
-        setIsSpeaking(false);
+      const audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)({ sampleRate: 24000 });
+      const binaryString = atob(base64Audio);
+      const bytes = new Uint8Array(binaryString.length);
+      for (let i = 0; i < binaryString.length; i++) {
+        bytes[i] = binaryString.charCodeAt(i);
       }
+      const buffer = await audioCtx.decodeAudioData(bytes.buffer);
+      const source = audioCtx.createBufferSource();
+      source.buffer = buffer;
+      source.connect(audioCtx.destination);
+      source.onended = () => setIsSpeaking(false);
+      source.start();
     } catch (error) {
-      console.error("TTS Error:", error);
+      console.error("Playback Error:", error);
       setIsSpeaking(false);
     }
   };
@@ -320,71 +259,65 @@ export default function App() {
     setIsEvaluating(true);
     
     try {
-      // Get base64 image with proper background
       const tempCanvas = document.createElement('canvas');
       tempCanvas.width = canvas.width;
       tempCanvas.height = canvas.height;
       const tempCtx = tempCanvas.getContext('2d');
       if (tempCtx) {
-        tempCtx.fillStyle = '#0a192f';
+        tempCtx.fillStyle = '#020813';
         tempCtx.fillRect(0, 0, tempCanvas.width, tempCanvas.height);
         tempCtx.drawImage(canvas, 0, 0);
       }
       const dataUrl = tempCanvas.toDataURL('image/jpeg', 0.8);
       const base64Data = dataUrl.split(',')[1];
 
-      const prompt = `Evaluate cursive handwriting submission under COMPUTERIZED ADAPTIVE TESTING protocol:
-
-###
-CURRICULUM STAGE: ${curriculumStage}
-DIFFICULTY_TIER: ABYSSOPELAGIC (5-6)
-TARGET: ${targetWord}
-SUBMISSION_DATA: [image]
-PRIOR_MASTERY_VECTOR: [${streak > 0 ? '7.0' : '4.0'}]
-SESSION_STREAK: ${streak}
-COGNITIVE_LOAD_INDEX: 0.6
-###
-
-Execute ADAPTIVE DIFFICULTY ALGORITHM.
-CRITICAL: If the score is below 8, you MUST provide a 'trace_pad_underlay' in the 'gated_unlocks' section. This must be a valid SVG string (viewBox='0 0 800 400') containing a <path> element that traces the ideal cursive form of the TARGET word. Use stroke='rgba(6,182,212,0.2)' fill='none' stroke-width='4'.`;
-
-      const response = await ai.models.generateContent({
-        model: 'gemini-3.1-pro-preview',
-        contents: {
-          parts: [
-            { text: prompt },
-            { inlineData: { data: base64Data, mimeType: 'image/jpeg' } }
-          ]
-        },
-        config: {
-          systemInstruction: SYSTEM_PROMPT,
-          responseMimeType: 'application/json',
-          responseSchema: RESPONSE_SCHEMA,
-          temperature: 0.7,
-          topP: 0.9
-        }
+      const response = await fetch('/api/evaluate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          image: base64Data,
+          curriculumStage,
+          targetWord,
+          streak,
+          ageRange,
+          educationalLevel,
+          scoreHistory,
+          subjectId,
+          harshness,
+          kinematics: allStrokes // Sending normalized strokes
+        })
       });
 
-      const responseText = response.text;
-      if (responseText) {
-        const parsed = JSON.parse(responseText) as AssessmentResponse;
-        setAssessment(parsed);
-        
-        // Play the professor's voice
-        generateAndPlaySpeech(parsed.voice_response.professor_persona);
-        
-        if (parsed.academic_assessment.score >= 8) {
-          setStreak(s => s + 1);
-        } else {
-          setStreak(0);
-        }
-        
-        if (parsed.adaptive_parameters.recommended_next_target) {
-          setTargetWord(parsed.adaptive_parameters.recommended_next_target);
-        }
-        if (parsed.adaptive_parameters.next_curriculum_stage) {
-          setCurriculumStage(parsed.adaptive_parameters.next_curriculum_stage);
-        }
+      if (!response.ok) throw new Error('Lab results compromised');
+
+      const parsed = await response.json() as AssessmentResponse & { location?: any };
+      setAssessment(parsed);
+      
+      if (parsed.location) setLocation(parsed.location);
+
+      if (parsed.audio) {
+        playBase64Audio(parsed.audio);
+      } else {
+        const utterance = new SpeechSynthesisUtterance(parsed.voice_response.professor_persona);
+        utterance.rate = 0.9;
+        utterance.pitch = 0.8;
+        window.speechSynthesis.speak(utterance);
+      }
+      
+      const score = parsed.academic_assessment.score;
+      if (score >= 8) {
+        setStreak(s => s + 1);
+      } else {
+        setStreak(0);
+      }
+
+      setScoreHistory(prev => [score, ...prev].slice(0, 10));
+      
+      if (parsed.adaptive_parameters.recommended_next_target) {
+        setTargetWord(parsed.adaptive_parameters.recommended_next_target);
+      }
+      if (parsed.adaptive_parameters.next_curriculum_stage) {
+        setCurriculumStage(parsed.adaptive_parameters.next_curriculum_stage);
       }
     } catch (error) {
       console.error("Error evaluating:", error);
@@ -401,267 +334,287 @@ CRITICAL: If the score is below 8, you MUST provide a 'trace_pad_underlay' in th
     return 'text-cyan-400 border-cyan-400/30 bg-cyan-400/10';
   };
 
+  const masteryIndex = scoreHistory.length > 0 
+    ? (scoreHistory.reduce((a, b) => a + b, 0) / scoreHistory.length).toFixed(1) 
+    : "0.0";
+
   return (
-    <div className="min-h-screen bg-[#020813] text-slate-300 font-sans selection:bg-cyan-500/30 overflow-x-hidden relative flex flex-col">
-      {/* Deep Sea Background Effects */}
-      <div className="fixed inset-0 bg-[radial-gradient(circle_at_50%_0%,#0a192f_0%,#020813_100%)] opacity-80" />
-      <div className="fixed inset-0 bg-[url('https://www.transparenttextures.com/patterns/stardust.png')] opacity-10 mix-blend-overlay" />
+    <div className="h-screen w-screen bg-[#02050a] text-slate-300 font-sans selection:bg-cyan-500/30 overflow-hidden relative flex flex-col">
+      {/* Background Depth Engine */}
+      <motion.div 
+        className="fixed inset-0 pointer-events-none"
+        animate={{ 
+          backgroundColor: parseFloat(masteryIndex) > 8 ? '#010307' : '#02050a',
+          opacity: [0.7, 0.8, 0.7]
+        }}
+        transition={{ duration: 5, repeat: Infinity }}
+      />
+      <div className="fixed inset-0 bg-[url('https://www.transparenttextures.com/patterns/stardust.png')] opacity-10 mix-blend-overlay pointer-events-none" />
       
-      {/* Animated Bubbles */}
-      <div className="fixed inset-0 overflow-hidden pointer-events-none">
-        {[...Array(20)].map((_, i) => (
-          <motion.div
-            key={i}
-            className="absolute rounded-full bg-cyan-400/10 border border-cyan-400/20"
-            style={{
-              width: Math.random() * 20 + 5,
-              height: Math.random() * 20 + 5,
-              left: `${Math.random() * 100}%`,
-              bottom: -50
-            }}
-            animate={{
-              y: [0, -window.innerHeight - 100],
-              x: [0, Math.random() * 100 - 50]
-            }}
-            transition={{
-              duration: Math.random() * 10 + 10,
-              repeat: Infinity,
-              ease: "linear",
-              delay: Math.random() * 10
-            }}
-          />
-        ))}
-      </div>
+      {/* Mobile-First Header */}
+      <header className="relative z-50 px-4 py-3 flex items-center justify-between border-b border-cyan-500/10 bg-black/40 backdrop-blur-md">
+        <h1 className="text-xl font-bold text-cyan-400 tracking-wider flex items-center gap-2">
+          <Waves className="w-5 h-5" />
+          BATHYSPHERE
+        </h1>
+        <div className="flex flex-col items-end">
+          <span className="text-[9px] text-slate-500 font-mono uppercase leading-none">Research Outpost</span>
+          <span className="text-xs font-bold text-cyan-400 font-mono flex items-center gap-1">
+            <MapPin className="w-3 h-3" />
+            {location ? `${location.city}` : "SYNCING..."}
+          </span>
+        </div>
+      </header>
 
-      <div className="relative z-10 w-full max-w-[1600px] mx-auto p-4 sm:p-6 lg:p-8 grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 flex-1">
+      <main className="flex-1 relative flex overflow-hidden">
         
-        {/* Left Column: Canvas & Controls */}
-        <div className="lg:col-span-7 xl:col-span-8 flex flex-col gap-6 py-4 lg:py-6">
-          <header className="flex items-center justify-between">
-            <div>
-              <h1 className="text-2xl font-bold text-cyan-400 tracking-wider flex items-center gap-2">
-                <Waves className="w-6 h-6" />
-                BATHYSPHERE LABS
-              </h1>
-              <p className="text-sm text-cyan-400/60 font-mono mt-1">CURSIVE KINEMATICS & MASTERY</p>
-            </div>
-            <div className="flex items-center gap-4">
-              <div className="flex flex-col items-end">
-                <span className="text-xs text-slate-500 font-mono uppercase">Session Streak</span>
-                <span className="text-xl font-bold text-emerald-400 font-mono">{streak}</span>
-              </div>
-            </div>
-          </header>
-
-          <div className="flex-1 flex flex-col gap-4">
-            <div className="flex justify-between items-end">
-              <div className="bg-slate-800/50 border border-slate-700/50 rounded-lg px-4 py-2 backdrop-blur-sm">
-                <span className="text-xs text-slate-400 font-mono block mb-1 uppercase">{curriculumStage.replace('_', ' ')}</span>
-                <span className="text-3xl font-serif italic text-white">{targetWord}</span>
+        {/* Left Column: Profile (Desktop Side or Mobile Tab) */}
+        <aside className={`
+          ${activeTab === 'profile' ? 'flex' : 'hidden'} 
+          lg:flex lg:w-80 flex-col gap-6 p-6 border-r border-slate-800 bg-[#020813]/80 backdrop-blur-xl z-40
+          absolute lg:relative inset-0
+        `}>
+          <div className="flex flex-col gap-6">
+            <h2 className="text-xs font-mono text-cyan-500 uppercase tracking-widest flex items-center gap-2">
+              <User className="w-4 h-4" />
+              Subject Profile
+            </h2>
+            
+            <div className="space-y-4">
+              <div>
+                <label className="text-[10px] font-mono text-slate-500 uppercase block mb-2">Age Range</label>
+                <select 
+                  value={ageRange}
+                  onChange={(e) => setAgeRange(e.target.value)}
+                  className="w-full bg-black/40 border border-slate-700/50 rounded-lg px-3 py-2 text-sm text-slate-300 focus:border-cyan-500/50 outline-none"
+                >
+                  <option>Child (5-12)</option>
+                  <option>Teen (13-17)</option>
+                  <option>Adult (18+)</option>
+                </select>
               </div>
               
-              <div className="flex gap-2">
-                <button 
-                  onClick={clearCanvas}
-                  className="p-3 rounded-lg bg-slate-800/50 border border-slate-700/50 text-slate-400 hover:text-white hover:bg-slate-700/50 transition-colors"
-                  title="Clear Canvas"
+              <div>
+                <label className="text-[10px] font-mono text-slate-500 uppercase block mb-2">Educational Level</label>
+                <select 
+                  value={educationalLevel}
+                  onChange={(e) => setEducationalLevel(e.target.value)}
+                  className="w-full bg-black/40 border border-slate-700/50 rounded-lg px-3 py-2 text-sm text-slate-300 focus:border-cyan-500/50 outline-none"
                 >
-                  <Eraser className="w-5 h-5" />
-                </button>
-                <button 
-                  onClick={submitToProfessor}
-                  disabled={isEvaluating}
-                  className="flex items-center gap-2 px-6 py-3 rounded-lg bg-cyan-500/20 border border-cyan-500/50 text-cyan-300 hover:bg-cyan-500/30 transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-mono uppercase text-sm tracking-wider"
-                >
-                  {isEvaluating ? (
-                    <motion.div animate={{ rotate: 360 }} transition={{ repeat: Infinity, duration: 1, ease: "linear" }}>
-                      <Activity className="w-5 h-5" />
-                    </motion.div>
-                  ) : (
-                    <Send className="w-5 h-5" />
-                  )}
-                  {isEvaluating ? 'Analyzing...' : 'Submit to Professor'}
-                </button>
+                  <option>Elementary</option>
+                  <option>Middle/High School</option>
+                  <option>Academic/Professional</option>
+                </select>
               </div>
-            </div>
 
-            <div className="w-full h-[60vh] min-h-[400px] lg:h-[calc(100vh-12rem)] relative rounded-xl overflow-hidden border border-cyan-500/30 shadow-[0_0_30px_rgba(6,182,212,0.1)] bg-[#0a192f]">
-              <div className="absolute inset-0 pointer-events-none opacity-20 bg-[linear-gradient(rgba(6,182,212,0.2)_1px,transparent_1px),linear-gradient(90deg,rgba(6,182,212,0.2)_1px,transparent_1px)] bg-[size:20px_20px]" />
-              
-              {/* Trace Pad Underlay */}
-              {assessment?.gated_unlocks?.trace_pad_underlay && (
-                <div 
-                  className="absolute inset-0 pointer-events-none flex items-center justify-center opacity-50 [&>svg]:w-full [&>svg]:h-full [&>svg]:object-contain"
-                  dangerouslySetInnerHTML={{ __html: assessment.gated_unlocks.trace_pad_underlay }}
+              <div className="pt-2">
+                <div className="flex justify-between items-center mb-2">
+                  <label className="text-[10px] font-mono text-slate-500 uppercase block tracking-widest">Clinical Harshness</label>
+                  <div className="flex items-center gap-2">
+                    {harshness < 30 ? <Smile className="w-3 h-3 text-emerald-400" /> : <Skull className={`w-3 h-3 ${harshness > 70 ? 'text-red-500 animate-pulse' : 'text-slate-500'}`} />}
+                    <span className="text-[10px] font-mono text-cyan-500">{harshness}%</span>
+                  </div>
+                </div>
+                <input 
+                  type="range" 
+                  min="0" 
+                  max="100" 
+                  value={harshness}
+                  onChange={(e) => setHarshness(parseInt(e.target.value))}
+                  className="w-full h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-cyan-500"
                 />
-              )}
-
-              <canvas
-                ref={canvasRef}
-                onMouseDown={startDrawing}
-                onMouseMove={draw}
-                onMouseUp={stopDrawing}
-                onMouseOut={stopDrawing}
-                onTouchStart={startDrawing}
-                onTouchMove={draw}
-                onTouchEnd={stopDrawing}
-                className="absolute inset-0 w-full h-full cursor-crosshair touch-none"
-              />
-              
-              {/* HUD Elements */}
-              <div className="absolute top-4 right-4 flex flex-col gap-2 pointer-events-none">
-                <div className="flex items-center gap-2 text-xs font-mono text-cyan-500/70 bg-black/40 px-2 py-1 rounded backdrop-blur-sm border border-cyan-500/20">
-                  <Droplets className="w-3 h-3" />
-                  <span>INK PRESSURE: OPTIMAL</span>
-                </div>
-                <div className="flex items-center gap-2 text-xs font-mono text-cyan-500/70 bg-black/40 px-2 py-1 rounded backdrop-blur-sm border border-cyan-500/20">
-                  <Gauge className="w-3 h-3" />
-                  <span>DEPTH: {streak * 100 + 200}M</span>
+                <div className="flex justify-between mt-1 px-1">
+                  <span className="text-[8px] font-mono text-slate-600 uppercase">Explorer</span>
+                  <span className="text-[8px] font-mono text-slate-600 uppercase">Pathologist</span>
                 </div>
               </div>
+            </div>
+
+            <div className="border-t border-slate-800 pt-6">
+              <div className="flex justify-between items-end mb-4">
+                <span className="text-[10px] font-mono text-slate-500 uppercase">Mastery Index</span>
+                <span className="text-2xl font-bold font-mono text-cyan-400">{masteryIndex}</span>
+              </div>
+              <div className="h-20 flex items-end gap-1 px-1">
+                {scoreHistory.slice(0, 10).reverse().map((score, i) => (
+                  <div key={i} className={`flex-1 rounded-t-sm ${getTierColor(score).split(' ')[2]}`} style={{ height: `${score * 10}%` }} />
+                ))}
+              </div>
+            </div>
+            
+            <div className="bg-black/40 rounded-lg p-4 border border-slate-800">
+              <span className="text-[9px] text-slate-500 font-mono uppercase mb-1 block">Subject Identification</span>
+              <code className="text-[10px] text-cyan-500/50 break-all">{subjectId}</code>
             </div>
           </div>
-        </div>
+        </aside>
 
-        {/* Right Column: Professor's Feedback */}
-        <div className="lg:col-span-5 xl:col-span-4 flex flex-col py-4 lg:py-6">
-          <div className="bg-slate-900/60 backdrop-blur-xl border border-slate-700/50 rounded-2xl p-5 sm:p-6 flex flex-col gap-6 relative lg:sticky lg:top-8 lg:max-h-[calc(100vh-4rem)] min-h-[400px] overflow-y-auto custom-scrollbar">
+        {/* Center: Full-Screen Laboratory */}
+        <section className={`
+          ${activeTab === 'lab' ? 'flex' : 'hidden lg:flex'} 
+          flex-1 flex-col relative bg-[#0a192f] select-none touch-none
+        `}>
+          {/* Target Word Overlay */}
+          <div className="absolute top-6 left-1/2 -translate-x-1/2 z-30 pointer-events-none text-center">
+            <span className="text-[10px] text-cyan-500/50 font-mono uppercase tracking-[0.2em]">{curriculumStage.replace('_', ' ')}</span>
+            <h2 className="text-5xl lg:text-7xl font-serif italic text-white drop-shadow-[0_0_20px_rgba(255,255,255,0.2)]">{targetWord}</h2>
+          </div>
+
+          {/* Floating HUD Controls */}
+          <div className="absolute top-6 right-6 z-30 flex flex-col gap-3">
+            <button 
+              onClick={clearCanvas}
+              className="p-3 rounded-full bg-black/40 backdrop-blur-md border border-slate-700/50 text-slate-400 hover:text-white transition-all active:scale-95"
+            >
+              <Eraser className="w-5 h-5" />
+            </button>
+            <button 
+              onClick={submitToProfessor}
+              disabled={isEvaluating}
+              className="p-4 rounded-full bg-cyan-500/20 backdrop-blur-md border border-cyan-500/50 text-cyan-300 hover:bg-cyan-500/40 transition-all disabled:opacity-50 active:scale-95 shadow-[0_0_20px_rgba(6,182,212,0.2)]"
+            >
+              {isEvaluating ? (
+                <motion.div animate={{ rotate: 360 }} transition={{ repeat: Infinity, duration: 1, ease: "linear" }}>
+                  <Activity className="w-6 h-6" />
+                </motion.div>
+              ) : (
+                <Send className="w-6 h-6" />
+              )}
+            </button>
+          </div>
+
+          <div className="absolute bottom-6 left-6 z-30 pointer-events-none hidden lg:flex flex-col gap-2">
+            <div className="flex items-center gap-2 text-[10px] font-mono text-cyan-500/70 bg-black/40 px-2 py-1 rounded border border-cyan-500/20 backdrop-blur-md">
+              <Droplets className="w-3 h-3" />
+              PRESSURE: SENSITIVE
+            </div>
+            <div className="flex items-center gap-2 text-[10px] font-mono text-cyan-500/70 bg-black/40 px-2 py-1 rounded border border-cyan-500/20 backdrop-blur-md">
+              <Activity className="w-3 h-3" />
+              SAMPLING: 60 HZ
+            </div>
+          </div>
+
+          {/* Canvas Wrapper */}
+          <div className="absolute inset-0 z-10 overflow-hidden">
+            <div className="absolute inset-0 pointer-events-none opacity-20 bg-[linear-gradient(rgba(6,182,212,0.2)_1px,transparent_1px),linear-gradient(90deg,rgba(6,182,212,0.2)_1px,transparent_1px)] bg-[size:30px_30px]" />
             
-            {!assessment && !isEvaluating && (
-              <div className="flex-1 flex flex-col items-center justify-center text-center opacity-50">
-                <BookOpen className="w-16 h-16 mb-4 text-cyan-500/50" />
-                <p className="font-mono text-sm max-w-xs">
-                  Awaiting specimen submission. The Professor is monitoring the pressure gauges.
+            {/* Animated Ghost Path Corrective */}
+            {assessment?.gated_unlocks?.trace_pad_underlay && (
+              <div 
+                className="absolute inset-0 pointer-events-none flex items-center justify-center opacity-40 [&>svg]:w-full [&>svg]:h-full [&>svg]:object-contain"
+                dangerouslySetInnerHTML={{ 
+                  __html: assessment.gated_unlocks.trace_pad_underlay 
+                    .replace('<path', '<path class="ghost-path"') 
+                }}
+              />
+            )}
+
+            <canvas
+              ref={canvasRef}
+              onPointerDown={startDrawing}
+              onPointerMove={draw}
+              onPointerUp={stopDrawing}
+              onPointerOut={stopDrawing}
+              className="w-full h-full cursor-crosshair"
+            />
+          </div>
+        </section>
+
+        {/* Right Column: Feedback (Desktop Side or Mobile Overlay) */}
+        <aside className={`
+          ${activeTab === 'records' ? 'flex' : 'hidden'} 
+          lg:flex lg:w-96 flex-col gap-6 p-6 border-l border-slate-800 bg-[#02050a]/90 backdrop-blur-xl z-40
+          absolute lg:relative inset-0
+        `}>
+          {!assessment && !isEvaluating ? (
+            <div className="flex-1 flex flex-col items-center justify-center text-center opacity-30">
+              <BookOpen className="w-12 h-12 mb-4" />
+              <p className="font-mono text-xs uppercase tracking-widest">Awaiting Specimen</p>
+            </div>
+          ) : assessment ? (
+            <div className="flex flex-col gap-6 overflow-y-auto custom-scrollbar pr-2">
+              <div className={`p-5 rounded-2xl border ${getTierColor(assessment.academic_assessment.score)} flex items-center justify-between`}>
+                <div>
+                  <span className="text-[10px] font-mono uppercase opacity-70 block mb-1">Assessment</span>
+                  <div className="text-4xl font-bold font-mono">{assessment.academic_assessment.score.toFixed(1)}</div>
+                </div>
+                <div className="text-right">
+                  <span className="text-[10px] font-mono uppercase opacity-70 block mb-1">Classification</span>
+                  <div className="text-sm font-bold uppercase tracking-wider text-cyan-400">
+                    {assessment.academic_assessment.tier_classification}
+                  </div>
+                </div>
+              </div>
+
+              <div className="pl-4 border-l-2 border-cyan-500/30">
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="text-[10px] font-mono text-cyan-500 uppercase">Professor Bathysphere</span>
+                  {isSpeaking && <motion.div animate={{ opacity: [0, 1, 0] }} transition={{ repeat: Infinity, duration: 1 }} className="w-1.5 h-1.5 rounded-full bg-cyan-400" />}
+                </div>
+                <p className="text-xl font-serif italic text-slate-100 leading-snug">
+                  "{assessment.voice_response.professor_persona}"
                 </p>
               </div>
-            )}
 
-            {isEvaluating && (
-              <div className="flex-1 flex flex-col items-center justify-center text-center">
-                <motion.div 
-                  animate={{ scale: [1, 1.1, 1], opacity: [0.5, 1, 0.5] }}
-                  transition={{ repeat: Infinity, duration: 2 }}
-                  className="w-24 h-24 rounded-full border-4 border-cyan-500/30 border-t-cyan-400 mb-6 animate-spin"
-                />
-                <p className="font-mono text-cyan-400 animate-pulse">Running diagnostic telemetry...</p>
+              <div className="space-y-4">
+                <div className="bg-black/40 p-4 rounded-xl border border-slate-800">
+                  <span className="text-[9px] text-slate-500 font-mono uppercase block mb-1 tracking-widest">Prescription</span>
+                  <p className="text-sm leading-relaxed text-slate-300">{assessment.diagnostic_analysis.remediation_prescription}</p>
+                </div>
+                <div className="bg-black/40 p-4 rounded-xl border border-slate-800">
+                  <span className="text-[9px] text-slate-500 font-mono uppercase block mb-1 tracking-widest">Diagnostic Failure</span>
+                  <p className="text-sm text-red-400/80 font-mono">{assessment.diagnostic_analysis.primary_failure_mode}</p>
+                </div>
               </div>
-            )}
-
-            <AnimatePresence mode="wait">
-              {assessment && !isEvaluating && (
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -20 }}
-                  className="flex flex-col gap-6"
-                >
-                  {/* Score & Tier Header */}
-                  <div className={`p-4 rounded-xl border ${getTierColor(assessment.academic_assessment.score)} flex items-center justify-between`}>
-                    <div>
-                      <h2 className="text-sm font-mono uppercase opacity-80 mb-1">
-                        {assessment.academic_assessment.tier_classification}
-                      </h2>
-                      <div className="text-3xl font-bold font-mono">
-                        {assessment.academic_assessment.score.toFixed(1)} <span className="text-lg opacity-50">/ 10</span>
-                      </div>
-                    </div>
-                    <div className="text-right">
-                      <div className="text-xs font-mono uppercase opacity-80 mb-1">Status</div>
-                      <div className="font-bold tracking-wider uppercase">
-                        {assessment.academic_assessment.mastery_status}
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Professor's Voice */}
-                  <div className="relative">
-                    <div className="absolute -left-3 top-4 w-1 h-full bg-cyan-500/30 rounded-full" />
-                    <div className="pl-4">
-                      <h3 className="text-xs font-mono text-cyan-500 uppercase mb-2 flex items-center gap-2">
-                        <AlertCircle className="w-3 h-3" />
-                        Professor Bathysphere
-                        {isSpeaking && (
-                          <motion.div 
-                            initial={{ opacity: 0 }}
-                            animate={{ opacity: 1 }}
-                            className="flex items-center gap-1 text-cyan-400 ml-2"
-                          >
-                            <Volume2 className="w-3 h-3 animate-pulse" />
-                            <span className="text-[10px]">SPEAKING</span>
-                          </motion.div>
-                        )}
-                      </h3>
-                      <p className="text-lg font-serif italic text-slate-200 leading-relaxed">
-                        "{assessment.voice_response.professor_persona}"
-                      </p>
-                    </div>
-                  </div>
-
-                  {/* Emotional Transcription */}
-                  <div className="bg-slate-800/40 border border-slate-700/50 rounded-lg p-4 text-center">
-                    <div className="text-[10px] font-mono text-slate-500 uppercase mb-2 tracking-widest">Specimen Transcription</div>
-                    <div className="text-md font-serif italic text-cyan-200/90">
-                      "{assessment.voice_response.emotional_transcription}"
-                    </div>
-                  </div>
-
-                  {/* Diagnostic Analysis */}
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="bg-black/40 border border-slate-700/50 rounded-lg p-3">
-                      <div className="text-[10px] font-mono text-slate-500 uppercase mb-1">Primary Failure Mode</div>
-                      <div className="text-sm text-slate-300">{assessment.diagnostic_analysis.primary_failure_mode}</div>
-                    </div>
-                    <div className="bg-black/40 border border-slate-700/50 rounded-lg p-3">
-                      <div className="text-[10px] font-mono text-slate-500 uppercase mb-1">Kinematic Anomaly</div>
-                      <div className="text-sm text-slate-300">{assessment.diagnostic_analysis.kinematic_anomaly}</div>
-                    </div>
-                  </div>
-
-                  {/* Prescription */}
-                  <div className="bg-cyan-950/30 border border-cyan-900/50 rounded-lg p-4">
-                    <h3 className="text-xs font-mono text-cyan-500 uppercase mb-2">Prescription</h3>
-                    <p className="text-sm text-cyan-100/80">
-                      {assessment.diagnostic_analysis.remediation_prescription}
-                    </p>
-                  </div>
-
-                  {/* Gated Unlocks (Only show if score >= 8 or if there are actual unlocks) */}
-                  {assessment.academic_assessment.score >= 7 && (
-                    <div className="border-t border-slate-700/50 pt-4 mt-2">
-                      <h3 className="text-xs font-mono text-emerald-500 uppercase mb-3">Gated Unlocks</h3>
-                      <ul className="space-y-2 text-sm font-mono">
-                        <li className="flex justify-between border-b border-slate-800 pb-1">
-                          <span className="text-slate-500">Technique:</span>
-                          <span className="text-emerald-400">{assessment.gated_unlocks.technique_revealed}</span>
-                        </li>
-                        <li className="flex justify-between border-b border-slate-800 pb-1">
-                          <span className="text-slate-500">Exemplar:</span>
-                          <span className="text-emerald-400">{assessment.gated_unlocks.historical_exemplar}</span>
-                        </li>
-                      </ul>
-                    </div>
-                  )}
-
-                </motion.div>
+              
+              {assessment.gated_unlocks.technique_revealed && (
+                <div className="p-4 rounded-xl bg-cyan-500/5 border border-cyan-500/20">
+                  <span className="text-[10px] text-cyan-400 font-mono uppercase block mb-2">Technique Revealed</span>
+                  <p className="text-sm italic text-cyan-100/70">"{assessment.gated_unlocks.technique_revealed}"</p>
+                </div>
               )}
-            </AnimatePresence>
+            </div>
+          ) : null}
+        </aside>
+      </main>
+
+      {/* Mobile Tab Navigation */}
+      <nav className="lg:hidden h-20 bg-black/60 backdrop-blur-xl border-t border-slate-800 flex items-center justify-around px-6 z-50">
+        <button onClick={() => setActiveTab('profile')} className={`flex flex-col items-center gap-1 ${activeTab === 'profile' ? 'text-cyan-400' : 'text-slate-500'}`}>
+          <User className="w-6 h-6" />
+          <span className="text-[10px] font-mono uppercase">Profile</span>
+        </button>
+        <button onClick={() => setActiveTab('lab')} className={`flex flex-col items-center gap-1 ${activeTab === 'lab' ? 'text-cyan-400' : 'text-slate-500'}`}>
+          <div className="p-3 rounded-full bg-cyan-900/40 relative -top-6 border border-cyan-500/30 shadow-[0_0_20px_rgba(6,182,212,0.3)]">
+            <PenTool className="w-8 h-8" />
           </div>
-        </div>
-      </div>
+          <span className="text-[10px] font-mono uppercase -mt-5">Laboratory</span>
+        </button>
+        <button onClick={() => setActiveTab('records')} className={`flex flex-col items-center gap-1 ${activeTab === 'records' ? 'text-cyan-400' : 'text-slate-500'}`}>
+          <BookMarked className="w-6 h-6" />
+          <span className="text-[10px] font-mono uppercase">Records</span>
+        </button>
+      </nav>
 
       <style>{`
+        .ghost-path {
+          stroke-dasharray: 2000;
+          stroke-dashoffset: 2000;
+          animation: hydro-draw 6s ease-in-out infinite alternate;
+          filter: drop-shadow(0 0 5px rgba(6, 182, 212, 0.5));
+        }
+        @keyframes hydro-draw {
+          to { stroke-dashoffset: 0; }
+        }
         .custom-scrollbar::-webkit-scrollbar {
-          width: 6px;
+          width: 4px;
         }
         .custom-scrollbar::-webkit-scrollbar-track {
-          background: rgba(15, 23, 42, 0.5);
+          background: transparent;
         }
         .custom-scrollbar::-webkit-scrollbar-thumb {
-          background: rgba(6, 182, 212, 0.2);
+          background: rgba(6, 182, 212, 0.1);
           border-radius: 10px;
-        }
-        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-          background: rgba(6, 182, 212, 0.4);
         }
       `}</style>
     </div>

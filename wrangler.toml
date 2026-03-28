@@ -1,0 +1,14 @@
+#:schema node_modules/wrangler/config-schema.json
+name = "bathosphere-professor"
+compatibility_date = "2024-04-03"
+pages_build_output_dir = "dist"
+
+[ai]
+binding = "AI"
+
+[[kv_namespaces]]
+binding = "SUBJECT_ARCHIVE"
+id = "subject_archive_kv" # This ID will be used in production; local dev uses a local DB.
+
+[vars]
+SYSTEM_PROMPT = "Professor Bathysphere's Cursive Academy"
