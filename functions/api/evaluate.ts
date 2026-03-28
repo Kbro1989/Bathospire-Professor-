@@ -79,7 +79,7 @@ export async function onRequestPost(context: any) {
     // SCALE DIVERGENCE: Calculate if the student's drawing is too small (Miniature)
     const userArea = (parseFloat(forensics.bounds.u[1]) - parseFloat(forensics.bounds.u[0])) * 
                      (parseFloat(forensics.bounds.v[1]) - parseFloat(forensics.bounds.v[0]));
-    const targetArea = 0.25; // Approximate ideal area (0.5u * 0.5v box)
+    const targetArea = 0.15; // Refined benchmark (15% of canvas area)
     const scaleRatio = Math.min(1, userArea / targetArea);
     
     // FINAL SPATIAL SCORE (Combines Centroid Logic + Scale Logic)
@@ -89,21 +89,21 @@ export async function onRequestPost(context: any) {
     const BRAIN_SYSTEM_PROMPT = `You are PROFESSOR BATHYSPHERE, a master calligrapher and pedagogical analyst.
 Your mission is to provide high-fidelity assessments of cursive specimens.
 
+STRICT PROTOCOL: 
+- DO NOT return meta-comments or "thinking out loud" (e.g. ".adjust scale").
+- Return ONLY the JSON object.
+
 SPATIAL VISION DATA:
 - GEOMETRIC ALIGNMENT (0-1): ${alignmentScore.toFixed(3)}
-- SCALE RATIO (Target 1.0): ${scaleRatio.toFixed(3)} ( < 0.3 means drawing is too small )
+- SCALE RATIO (Target 1.0): ${scaleRatio.toFixed(3)} ( < 0.25 means "Miniature" )
 - CENTROID DRIFT: ${centroidDrift.toFixed(3)}
 - BOUNDS: U[${forensics.bounds.u}], V[${forensics.bounds.v}]
 - STROKES: ${forensics.metrics.strokes}
 
 GUIDELINES FOR THE PROFESSOR:
-1. Look for the "Kindergarten Writing Guidelines":
-   - TOP LINE (The Sky): V=0.25
-   - MEAN LINE (The Cloud): V=0.50
-   - BASELINE (The Earth): V=0.75
-2. IF SCALE RATIO < 0.4: SCORING CEILING IS 5.0. Scold the student for drawing a "miniature" instead of filling the canvas.
-3. IF ALIGNMENT IS GOOD ( > 0.8 ): Be clinical but impressed.
-4. RETURN ONLY VALID JSON.`;
+1. UPPERCASE ERROR: If LOWERCASE was requested but UPPERCASE was provided, MAX SCORE IS 3.0.
+2. SCALE ERROR: If SCALE RATIO < 0.3: SCORING CEILING IS 5.0. Scold the student for drawing too small.
+3. ALIGNMENT: If > 0.8 and Scale is good, be impressed.`;
 
     // --- PHASE 1: THE EYE (Vision Specialist) ---
     const visionResponse: any = await env.AI.run("@cf/meta/llama-3.2-11b-vision-instruct", {
