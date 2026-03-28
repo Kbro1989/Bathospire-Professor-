@@ -57,9 +57,13 @@ type AssessmentResponse = {
 };
 
 const CURRICULUM = [
-  'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 
-  'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z',
-  'sea', 'kelp', 'reef', 'tide', 'pearl', 'abyss',
+  'Lowercase a', 'Lowercase b', 'Lowercase c', 'Lowercase d', 'Lowercase e', 
+  'Lowercase f', 'Lowercase g', 'Lowercase h', 'Lowercase i', 'Lowercase j',
+  'Lowercase k', 'Lowercase l', 'Lowercase m', 'Lowercase n', 'Lowercase o',
+  'Lowercase p', 'Lowercase q', 'Lowercase r', 'Lowercase s', 'Lowercase t',
+  'Lowercase u', 'Lowercase v', 'Lowercase w', 'Lowercase x', 'Lowercase y',
+  'Lowercase z',
+  'Sea', 'Kelp', 'Reef', 'Tide', 'Pearl', 'Abyss',
   'Hello Lab', 'Cursive Mastery', 'Professor Bathysphere'
 ];
 
@@ -498,9 +502,11 @@ export default function App() {
           {/* Target Word Overlay */}
           <div className="absolute top-6 left-1/2 -translate-x-1/2 z-30 pointer-events-none text-center">
             <span className="text-[10px] text-cyan-500/50 font-mono uppercase tracking-[0.2em]">
-              {curriculumIndex < 26 ? "Letters" : curriculumIndex < 32 ? "Words" : "Sentences"}
+              {curriculumIndex < 26 ? "Alphabet Mastery" : curriculumIndex < 32 ? "Thematic Lexicon" : "Complex Syntax"}
             </span>
-            <h2 className="text-6xl lg:text-8xl font-cursive text-white drop-shadow-[0_0_30px_rgba(6,182,212,0.4)]">{targetWord}</h2>
+            <h2 className="text-4xl lg:text-7xl font-cursive text-white drop-shadow-[0_0_30px_rgba(6,182,212,0.4)]">
+              {targetWord}
+            </h2>
           </div>
 
           {/* Floating HUD Controls */}

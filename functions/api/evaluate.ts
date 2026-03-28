@@ -41,30 +41,45 @@ export async function onRequestPost(context: any) {
     const forensics = calculateForensics(kinematics);
 
     // --- 4. CALLIGRAPHIC REFERENCE ---
+    const pureTarget = targetWord.split(' ').pop()?.toLowerCase() || targetWord.toLowerCase();
+    
     const REFERENCES: Record<string, { path: string, centroid: { u: number, v: number } }> = {
       'a': { path: "M 40 60 C 35 60 30 55 30 45 C 30 35 40 30 50 30 C 60 30 70 35 70 45 L 70 60", centroid: { u: 0.5, v: 0.45 } },
       'b': { path: "M 30 80 L 30 20 C 30 10 50 10 50 20 C 50 30 30 30 30 30 C 30 45 60 45 60 65 C 60 85 30 85 30 80", centroid: { u: 0.45, v: 0.5 } },
       'c': { path: "M 70 30 C 60 20 30 20 30 50 C 30 80 60 80 70 70", centroid: { u: 0.5, v: 0.5 } },
+      'd': { path: "M 70 10 L 70 60 M 70 45 C 70 35 60 30 50 30 C 40 30 30 35 30 45 C 30 55 40 60 50 60 C 60 60 70 55 70 45", centroid: { u: 0.5, v: 0.45 } },
+      'e': { path: "M 30 50 C 30 30 70 30 70 50 C 70 70 30 70 30 50 L 70 50", centroid: { u: 0.5, v: 0.5 } },
+      'f': { path: "M 50 80 L 50 10 C 50 0 70 0 70 10 C 70 20 50 20 50 30 L 50 60 M 35 45 L 65 45", centroid: { u: 0.5, v: 0.3 } },
       // ... more letters would go here
     };
-    const targetRef = REFERENCES[targetWord.toLowerCase()] || { path: "M 20 50 L 80 50", centroid: { u: 0.5, v: 0.5 } };
+    const targetRef = REFERENCES[pureTarget] || { path: "M 20 50 L 80 50", centroid: { u: 0.5, v: 0.5 } };
     const drift = Math.sqrt(Math.pow(forensics.centroid.u - targetRef.centroid.u, 2) + Math.pow(forensics.centroid.v - targetRef.centroid.v, 2)).toFixed(3);
 
     // --- PHASE 1: THE EYE (Vision Specialist) ---
-    // Objective: Textual description of handwriting quality only.
     const visionResponse: any = await env.AI.run("@cf/meta/llama-3.2-11b-vision-instruct", {
       image: [image],
-      prompt: `Critique this cursive specimen for "${targetWord}". 
-               Focus on line quality, formation errors, and calligraphic accuracy. 
-               Be clinical and professional. Describe exactly what you see.`,
+      prompt: `Strictly critique this specimen for "${targetWord}". 
+               1. If the shape is NOT the letter "${pureTarget}" (e.g. just a line, a hyphen, or empty), assign a score of 1.0.
+               2. Analyze cursive formation: loops, stems, and terminal strokes.
+               3. Compare to "${targetWord}" specifically.
+               Return a clinical, brief description of the formation quality.`,
       max_tokens: 512
     });
     const visualCritique = visionResponse.response || "Inconclusive scan.";
 
     // --- PHASE 2: THE BRAIN (Synthesis Specialist) ---
-    // Objective: Structured JSON generation using critique + forensics.
     const brainPrompt = `You are PROFESSOR BATHYSPHERE. 
 Synthesize a forensic report into a strictly valid JSON object.
+
+ANALYSIS GUIDELINES:
+- IF Specimen is NOT a character (e.g. just a hyphen '-'), SCORE IS 1.0.
+- PASSING GRADE (next_challenge_eligibility = true) is Score >= 7.0.
+- MASTERY STATUS (mastery_status = 'Mastered') is Score >= 8.5.
+
+VISUAL CRITIQUE: "${visualCritique}"
+FORENSIC DATA: Strokes: ${forensics.metrics.strokes}, Pressure: ${forensics.metrics.avgP}, Spatial Drift: ${drift}
+TARGET SUBJECT: "${targetWord}" (Pure: ${pureTarget})
+CANONICAL PATH: "${targetRef.path}"
 
 VISUAL CRITIQUE: "${visualCritique}"
 FORENSIC DATA: Strokes: ${forensics.metrics.strokes}, Pressure: ${forensics.metrics.avgP}, Spatial Drift: ${drift}
