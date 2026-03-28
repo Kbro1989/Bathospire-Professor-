@@ -284,11 +284,14 @@ export default function App() {
           scoreHistory,
           subjectId,
           harshness,
-          kinematics: allStrokes // Sending normalized strokes
+          kinematics: allStrokes 
         })
       });
 
-      if (!response.ok) throw new Error('Lab results compromised');
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ error: 'Lab results compromised' }));
+        throw new Error(errorData.error || 'Lab results compromised');
+      }
 
       const parsed = await response.json() as AssessmentResponse & { location?: any };
       setAssessment(parsed);
