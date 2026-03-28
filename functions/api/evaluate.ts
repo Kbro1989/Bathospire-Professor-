@@ -116,11 +116,23 @@ Start with {`;
 
     let assessment: any;
     try {
-      const responseText = typeof aiResponse.response === 'object' ? JSON.stringify(aiResponse.response) : aiResponse.response;
-      const jsonMatch = responseText.match(/\{[\s\S]*\}/);
-      assessment = JSON.parse(jsonMatch ? jsonMatch[0] : responseText);
+      let raw = aiResponse.response;
+      
+      // Recursive unescape for double-encoded strings from AI gateway
+      const cleanJson = (input: any): any => {
+        if (typeof input === 'object') return input;
+        try {
+          const parsed = JSON.parse(input);
+          return typeof parsed === 'object' ? parsed : cleanJson(parsed);
+        } catch {
+          const match = input.match(/\{[\s\S]*\}/);
+          return match ? JSON.parse(match[0]) : JSON.parse(input);
+        }
+      };
+
+      assessment = cleanJson(raw);
     } catch (e: any) {
-      throw new Error(`Invalid AI response format: ${JSON.stringify(aiResponse.response)}`);
+      throw new Error(`Professor's Diagnosis Unreadable: ${JSON.stringify(aiResponse.response).substring(0, 100)}...`);
     }
 
     // 2. Persistent Archive Write-Back
