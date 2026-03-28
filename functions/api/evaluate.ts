@@ -145,29 +145,33 @@ INSTRUCTION: Analyze image and return ONLY JSON. Start with {`;
 
     let assessment: any;
     try {
-      const raw = aiResponse.response;
+      const rawResponse = aiResponse.response;
       
       const heuristicClean = (input: string): any => {
         if (typeof input !== 'string') return input;
 
-        // 1. Remove Markdown code blocks if present
+        // 1. Markdown & Preamble Removal
         let target = input.replace(/```json/g, "").replace(/```/g, "").trim();
-
-        // 2. Identify and Extract first valid JSON Object
         const firstBrace = target.indexOf('{');
         const lastBrace = target.lastIndexOf('}');
-        if (firstBrace === -1 || lastBrace === -1) throw new Error("No JSON object extracted.");
-        
+        if (firstBrace === -1 || lastBrace === -1) throw new Error("No JSON found.");
         target = target.substring(firstBrace, lastBrace + 1);
 
-        // 3. Attempt parsing with common sanitizations
+        // 2. Loose-JSON Sanitization
+        // Remove trailing commas: ,} -> } and ,] -> ]
+        target = target.replace(/,\s*([}\]])/g, '$1');
+        // Remove comments: // or /* */
+        target = target.replace(/\/\/.*$/gm, '');
+        target = target.replace(/\/\*[\s\S]*?\*\//g, '');
+        // Escape literal newlines remaining in strings (risky but often necessary)
+        // target = target.replace(/(?<=:.*"[^"]*)\n(?=[^"]*"[^"]*[,}])/g, "\\n");
+
         try {
-          // Standard Parse
           const parsed = JSON.parse(target);
-          if (typeof parsed === 'string') return heuristicClean(parsed); // Recursive unescape
+          if (typeof parsed === 'string') return heuristicClean(parsed);
           return parsed;
         } catch (e) {
-          // Failure: Try aggressive unescape (handles double-escaped artifacts from gateways)
+          // Failure: Try deep unescape
           try {
             const sanitized = target
               .replace(/\\n/g, '\n')
@@ -177,12 +181,14 @@ INSTRUCTION: Analyze image and return ONLY JSON. Start with {`;
             if (typeof secondAttempt === 'string') return heuristicClean(secondAttempt);
             return secondAttempt;
           } catch (e2) {
-            throw new Error(`Parse Failed: ${e2}`);
+             // FINAL STAND: Try one last time with a completely stripped version
+             const desperate = target.replace(/[\n\r\t]/g, " ");
+             return JSON.parse(desperate);
           }
         }
       };
 
-      assessment = heuristicClean(raw);
+      assessment = heuristicClean(rawResponse);
     } catch (e: any) {
       throw new Error(`Professor's Diagnosis Unreadable: ${aiResponse.response.substring(0, 100)}...`);
     }
