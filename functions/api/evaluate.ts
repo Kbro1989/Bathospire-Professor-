@@ -88,12 +88,13 @@ EXAMPLE OUTPUT PROTOCOL:
   "academic_assessment": { "score": 8.5, "tier_classification": "Advanced", "mastery_status": "Mastered", "next_challenge_eligibility": true, "difficulty_adjustment": "Maintain" },
   "diagnostic_analysis": { "primary_failure_mode": "None", "kinematic_anomaly": "Slight jitter on ascender", "remediation_prescription": "Focus on fluid wrist rotation.", "information_disclosure_level": 5 },
   "voice_response": { "professor_persona": "Clinical and impressed.", "emotional_valence": "Positive", "roast_intensity": 2, "hype_coefficient": 8, "emotional_transcription": "Exquisite line work, Subject." },
-  "gated_unlocks": { "technique_revealed": "Feather-light pressure", "historical_exemplar": "Palmer Method", "visual_feedback": "Perfect baseline alignment.", "next_challenge_preview": "Connected loops", "trace_pad_underlay": "M 20 50 C 30 20 70 20 80 50" },
+  "gated_unlocks": { "technique_revealed": "Feather-light pressure", "historical_exemplar": "Palmer Method", "visual_feedback": "Perfect baseline alignment.", "next_challenge_preview": "Connected loops", "trace_pad_underlay": "M 40 60 C 35 60 30 55 30 45 C 30 35 40 30 50 30 C 60 30 70 35 70 45 L 70 60" },
   "adaptive_parameters": { "recommended_next_target": "b", "next_curriculum_stage": "Connected Letters", "scaffolding_level": "Minimal", "cognitive_load_adjustment": "Optimal", "retrieval_practice_prompt": "Recall the loop entry." }
 }
 
 INSTRUCTION: Analyze the image and return ONLY the JSON. No markdown. No intro. 
-The 'trace_pad_underlay' MUST be a valid SVG path string (d-attribute) on a 0-100 coordinate scale that corrects the user's specimen. 
+The 'trace_pad_underlay' MUST be an anatomically correct, high-fidelity CURSIVE SVG path (d-attribute) on a 0-100 coordinate scale.
+Do not return simple arches. Return the actual cursive construction of the letter '${targetWord}'.
 Start with {`;
 
     // 1. Handwriting Evaluation with Vision Model (Image URL Data URI Schema)

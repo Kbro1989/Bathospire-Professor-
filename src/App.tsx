@@ -308,12 +308,14 @@ export default function App() {
       
       if (parsed.location) setLocation(parsed.location);
 
+      const fullReport = `Assessment: ${parsed.academic_assessment.score.toFixed(1)}. Classification: ${parsed.academic_assessment.tier_classification}. Professor's Note: ${parsed.voice_response.professor_persona}. Diagnosis: ${parsed.diagnostic_analysis.primary_failure_mode}. Recommendation: ${parsed.diagnostic_analysis.remediation_prescription}`;
+
       if (parsed.audio) {
         playBase64Audio(parsed.audio);
       } else {
-        const utterance = new SpeechSynthesisUtterance(parsed.voice_response.professor_persona);
-        utterance.rate = 0.9;
-        utterance.pitch = 0.8;
+        const utterance = new SpeechSynthesisUtterance(fullReport);
+        utterance.rate = 0.85;
+        utterance.pitch = 0.75;
         window.speechSynthesis.speak(utterance);
       }
       
@@ -470,7 +472,7 @@ export default function App() {
           {/* Target Word Overlay */}
           <div className="absolute top-6 left-1/2 -translate-x-1/2 z-30 pointer-events-none text-center">
             <span className="text-[10px] text-cyan-500/50 font-mono uppercase tracking-[0.2em]">{curriculumStage.replace('_', ' ')}</span>
-            <h2 className="text-5xl lg:text-7xl font-serif italic text-white drop-shadow-[0_0_20px_rgba(255,255,255,0.2)]">{targetWord}</h2>
+            <h2 className="text-6xl lg:text-8xl font-cursive text-white drop-shadow-[0_0_30px_rgba(6,182,212,0.4)]">{targetWord}</h2>
           </div>
 
           {/* Floating HUD Controls */}
@@ -614,6 +616,9 @@ export default function App() {
       </nav>
 
       <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Great+Vibes&display=swap');
+        .font-cursive { font-family: 'Great Vibes', cursive; }
+        
         .ghost-path {
           stroke: #00ffcc;
           stroke-width: 2;
