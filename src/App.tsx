@@ -511,15 +511,19 @@ export default function App() {
           <div className="absolute inset-0 z-10 overflow-hidden">
             <div className="absolute inset-0 pointer-events-none opacity-20 bg-[linear-gradient(rgba(6,182,212,0.2)_1px,transparent_1px),linear-gradient(90deg,rgba(6,182,212,0.2)_1px,transparent_1px)] bg-[size:30px_30px]" />
             
-            {/* Animated Ghost Path Corrective */}
+            {/* Animated Ghost Path Corrective (Wraps raw path string in SVG) */}
             {assessment?.gated_unlocks?.trace_pad_underlay && (
-              <div 
-                className="absolute inset-0 pointer-events-none flex items-center justify-center opacity-40 [&>svg]:w-full [&>svg]:h-full [&>svg]:object-contain"
-                dangerouslySetInnerHTML={{ 
-                  __html: assessment.gated_unlocks.trace_pad_underlay 
-                    .replace('<path', '<path class="ghost-path"') 
-                }}
-              />
+              <div className="absolute inset-0 pointer-events-none flex items-center justify-center opacity-40">
+                <svg viewBox="0 0 100 100" className="w-full h-full object-contain">
+                  <path 
+                    d={assessment.gated_unlocks.trace_pad_underlay.startsWith('<path') 
+                        ? (assessment.gated_unlocks.trace_pad_underlay.match(/d="([^"]+)"/) || [])[1] 
+                        : assessment.gated_unlocks.trace_pad_underlay
+                      } 
+                    className="ghost-path" 
+                  />
+                </svg>
+              </div>
             )}
 
             <canvas
@@ -611,10 +615,14 @@ export default function App() {
 
       <style>{`
         .ghost-path {
+          stroke: #00ffcc;
+          stroke-width: 2;
+          fill: none;
+          stroke-linecap: round;
           stroke-dasharray: 2000;
           stroke-dashoffset: 2000;
           animation: hydro-draw 6s ease-in-out infinite alternate;
-          filter: drop-shadow(0 0 5px rgba(6, 182, 212, 0.5));
+          filter: drop-shadow(0 0 8px rgba(0, 255, 204, 0.4));
         }
         @keyframes hydro-draw {
           to { stroke-dashoffset: 0; }
