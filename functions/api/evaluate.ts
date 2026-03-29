@@ -110,15 +110,16 @@ GUIDELINES FOR THE PROFESSOR:
       image: [image],
       prompt: `Strictly critique this CURSIVE specimen for "${targetWord}". 
                
-               CATEGORICAL CONSTRAINTS:
-               1. WE ARE ONLY MASTERING LOWERCASE. If the student draws an UPPERCASE "${pureTarget.toUpperCase()}" instead of a LOWERCASE "${pureTarget}", assign a score of 2.0 and scold them for using the wrong case.
-               2. If the shape is NOT the letter "${pureTarget}" (e.g. just a line, a hyphen), assign a score of 1.0.
+               CATEGORICAL AUDIT:
+               1. Identify the Case: Is this Lowercase "${pureTarget}" or Uppercase "${pureTarget.toUpperCase()}"?
+               2. If it is high-quality UPPERCASE when LOWERCASE was requested, explicitly state: "Excellent uppercase form, but wrong case."
+               3. If the shape is NOT the letter "${pureTarget}" at all, identify it as "Unstructured".
                
                SPATIAL AUDIT:
-               - The body of the lowercase "${pureTarget}" MUST sit between the BASELINE (V=75%) and the MEAN LINE (V=50%). 
-               - If it reaches the TOP LINE (V=25%), it is too tall for a lowercase body.
+               - Does it sit between the BASELINE (V=75%) and the MEAN LINE (V=50%)?
+               - Does it have the characteristic cursives loops for "${pureTarget}"?
                
-               Return a brief, clinical description of the formation quality.`,
+               Return a clinical, brief description of the formation quality and case.`,
       max_tokens: 512
     });
     const visualCritique = visionResponse.response || "Inconclusive scan.";
@@ -127,9 +128,9 @@ GUIDELINES FOR THE PROFESSOR:
     const brainPrompt = `You are PROFESSOR BATHYSPHERE. 
 Synthesize a forensic report into a strictly valid JSON object.
 
-ANALYSIS GUIDELINES:
-- CATEGORICAL ERROR: If Phase 1 detected an UPPERCASE letter when LOWERCASE was requested, MAX SCORE IS 3.0.
-- SCALE ERROR: If SCALE RATIO < 0.4 (Miniature), MAX SCORE IS 5.0.
+PEDAGOGICAL NUANCE:
+- WRONG CASE, GOOD FORM: If Phase 1 detected a high-quality UPPERCASE "${pureTarget.toUpperCase()}" but we wanted LOWERCASE, award a Score of 5.5. Praise the calligraphic form in 'voice_response' but insist on the miniscule for the retry.
+- SCALE ERROR: If SCALE RATIO < 0.3 (Miniature), MAX SCORE IS 5.0.
 - PASSING GRADE (next_challenge_eligibility = true) is Score >= 7.0.
 - MASTERY STATUS (mastery_status = 'Mastered') is Score >= 8.5.
 
