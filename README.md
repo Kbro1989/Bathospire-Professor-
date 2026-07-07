@@ -1,20 +1,33 @@
-<div align="center">
-<img width="1200" height="475" alt="GHBanner" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
-</div>
+# Bathospire Professor — AI Cursive Writing Tutor
 
-# Run and deploy your AI Studio app
+> React · TypeScript · Vite · Cloudflare Pages · Workers AI · Framer Motion
 
-This contains everything you need to run your app locally.
+AI-graded cursive writing tutor. Canvas stroke input → Cloudflare AI assessment →
+adaptive feedback + TTS voice response from Professor Bathysphere.
 
-View your app in AI Studio: https://ai.studio/apps/7d165f01-d1b9-4f41-a1ec-9dca19f5ef19
+## Curriculum
 
-## Run Locally
+26 lowercase letters (a–z) → words (Sea, Kelp, Reef, Tide, Pearl, Abyss) →
+phrases (Hello Lab, Cursive Mastery, Professor Bathysphere)
 
-**Prerequisites:**  Node.js
+## Assessment Schema
 
+```typescript
+{
+  academic_assessment: { score, tier_classification, mastery_status, difficulty_adjustment },
+  diagnostic_analysis: { primary_failure_mode, kinematic_anomaly, remediation_prescription },
+  voice_response: { professor_persona, roast_intensity, hype_coefficient, emotional_transcription },
+  gated_unlocks: { technique_revealed, historical_exemplar, trace_pad_underlay },
+  adaptive_parameters: { next_challenge, scaffolding_level, cognitive_load_adjustment }
+}
+```
 
-1. Install dependencies:
-   `npm install`
-2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
-3. Run the app:
-   `npm run dev`
+## Architecture
+
+```
+src/
+├── App.tsx       # Canvas + assessment UI + streak tracker + subject profile
+├── main.tsx
+└── utils/
+functions/        # Cloudflare Pages Functions — grading + TTS (backend)
+```
