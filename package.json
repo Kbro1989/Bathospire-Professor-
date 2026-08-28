@@ -19,7 +19,7 @@
     "motion": "^12.23.24",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
-    "vite": "^6.2.0"
+    "vite": "^6.4.2"
   },
   "devDependencies": {
     "@cloudflare/workers-types": "^4.20260317.1",
@@ -29,7 +29,7 @@
     "tailwindcss": "^4.1.14",
     "tsx": "^4.21.0",
     "typescript": "~5.8.2",
-    "vite": "^6.2.0",
+    "vite": "^6.4.2",
     "wrangler": "^4.78.0"
   }
 }
